@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: semrush-admin-portal
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
+    envVars:
+      - key: SEMRUSH_API_KEY
+        sync: false
+      - key: SEMRUSH_PROJECT_ID
+        sync: false
+      - key: SEMRUSH_CAMPAIGN_ID
+        sync: false
+      - key: SEMRUSH_LISTING_TOKEN
+        sync: false
+      - key: GCP_PROJECT_ID
+        sync: false
+      - key: BQ_DATASET
+        value: semrush_data
+      - key: SEMRUSH_DATABASE
+        value: us
+      - key: TARGET_DOMAIN
+        sync: false
+      - key: GOOGLE_APPLICATION_CREDENTIALS_JSON
+        sync: false

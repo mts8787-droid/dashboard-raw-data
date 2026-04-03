@@ -1,7 +1,17 @@
 import os
+import json
+import tempfile
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# GCP 서비스 계정 (Render 환경변수에서 JSON 문자열로 전달)
+_gcp_creds_json = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+if _gcp_creds_json and not os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
+    _tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
+    _tmp.write(_gcp_creds_json)
+    _tmp.close()
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = _tmp.name
 
 # SEMrush API
 SEMRUSH_API_KEY = os.getenv("SEMRUSH_API_KEY")
