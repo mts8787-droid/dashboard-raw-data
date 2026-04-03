@@ -3,7 +3,7 @@ services:
     name: semrush-admin-portal
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python -m streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
+    startCommand: bash start.sh
     envVars:
       - key: SEMRUSH_API_KEY
         sync: false
