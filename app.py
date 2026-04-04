@@ -82,4 +82,5 @@ with st.sidebar:
         st.markdown(f"\n**대상 도메인:** `{TARGET_DOMAIN}`")
 
     st.markdown("---")
-    st.markdown("`.env` 파일에서 설정을 변경할 수 있습니다.")
+    st.page_link("pages/0_settings.py", label="⚙️ 연결 설정 & 가이드", icon="🔧")
+    st.markdown("`.env` 파일에서도 설정을 변경할 수 있습니다.")

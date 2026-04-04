@@ -74,7 +74,7 @@ class SEMrushClient:
             params["display_offset"] = offset
             try:
                 df = self._analytics_request(params.copy())
-            except RuntimeError:
+            except (RuntimeError, requests.exceptions.RequestException):
                 break
             if df.empty:
                 break

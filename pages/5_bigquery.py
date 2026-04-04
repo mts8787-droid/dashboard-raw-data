@@ -7,6 +7,7 @@ from config import GCP_PROJECT_ID, BQ_DATASET
 st.set_page_config(page_title="BigQuery 관리", page_icon="🗄️", layout="wide")
 st.title("🗄️ BigQuery 데이터 관리")
 
+@st.cache_resource
 def get_loader():
     from bigquery_loader import BigQueryLoader
     return BigQueryLoader()
@@ -29,15 +30,19 @@ if "bq_tables" in st.session_state:
         st.dataframe(df, use_container_width=True)
 
         # 요약 메트릭
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("총 테이블 수", len(tables))
-        with col2:
-            total_rows = sum(t.get("num_rows", 0) for t in tables)
-            st.metric("총 행 수", f"{total_rows:,}")
-        with col3:
-            total_size = sum(t.get("size_mb", 0) for t in tables)
-            st.metric("총 크기", f"{total_size:.1f} MB")
+        from chart_utils import metric_cards
+
+        total_rows = sum(t.get("num_rows", 0) for t in tables)
+        total_size = sum(t.get("size_mb", 0) for t in tables)
+
+        metric_cards([
+            {"label": "총 테이블 수", "value": len(tables), "display": str(len(tables)),
+             "delta": None, "color": "#6366f1"},
+            {"label": "총 행 수", "value": total_rows, "display": f"{total_rows:,}",
+             "delta": None, "color": "#3b82f6"},
+            {"label": "총 크기", "value": total_size, "display": f"{total_size:.1f}", "suffix": " MB",
+             "delta": None, "color": "#8b5cf6"},
+        ])
     else:
         st.info("아직 생성된 테이블이 없습니다.")
 

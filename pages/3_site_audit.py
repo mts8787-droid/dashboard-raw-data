@@ -7,10 +7,12 @@ from config import SEMRUSH_PROJECT_ID
 st.set_page_config(page_title="Site Audit", page_icon="🏥", layout="wide")
 st.title("🏥 Site Audit")
 
+@st.cache_resource
 def get_client():
     from semrush_client import SEMrushClient
     return SEMrushClient()
 
+@st.cache_resource
 def get_loader():
     from bigquery_loader import BigQueryLoader
     return BigQueryLoader()
@@ -68,23 +70,32 @@ if "audit_raw" in st.session_state:
     st.markdown("---")
 
     # 건강도 점수
+    from chart_utils import metric_cards
+
     quality = data.get("quality", {})
     score = quality.get("value", 0)
     delta = quality.get("delta", 0)
 
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("건강도 점수", f"{score}/100", delta=delta)
-    with col2:
-        errors = data.get("errors", [])
-        st.metric("에러", sum(e.get("count", 0) for e in errors),
-                  delta=-sum(e.get("delta", 0) for e in errors), delta_color="inverse")
-    with col3:
-        warnings = data.get("warnings", [])
-        st.metric("경고", sum(w.get("count", 0) for w in warnings),
-                  delta=-sum(w.get("delta", 0) for w in warnings), delta_color="inverse")
-    with col4:
-        st.metric("크롤링 페이지", data.get("pages_crawled", 0))
+    errors = data.get("errors", [])
+    error_count = sum(e.get("count", 0) for e in errors)
+    error_delta = -sum(e.get("delta", 0) for e in errors)
+
+    warnings = data.get("warnings", [])
+    warning_count = sum(w.get("count", 0) for w in warnings)
+    warning_delta = -sum(w.get("delta", 0) for w in warnings)
+
+    pages_crawled = data.get("pages_crawled", 0)
+
+    metric_cards([
+        {"label": "건강도 점수", "value": score, "display": f"{score}/100",
+         "delta": delta, "color": "#22c55e" if score >= 80 else "#f59e0b" if score >= 50 else "#ef4444"},
+        {"label": "에러", "value": error_count, "display": str(error_count),
+         "delta": error_delta, "inverse": True, "color": "#ef4444"},
+        {"label": "경고", "value": warning_count, "display": str(warning_count),
+         "delta": warning_delta, "inverse": True, "color": "#f59e0b"},
+        {"label": "크롤링 페이지", "value": pages_crawled, "display": f"{pages_crawled:,}",
+         "delta": None, "color": "#3b82f6"},
+    ])
 
     # 상세 이슈 테이블
     st.markdown("### 에러 상세")

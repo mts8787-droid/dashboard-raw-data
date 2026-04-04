@@ -1,4 +1,5 @@
 import os
+import atexit
 import json
 import tempfile
 from dotenv import load_dotenv
@@ -12,6 +13,7 @@ if _gcp_creds_json and not os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
     _tmp.write(_gcp_creds_json)
     _tmp.close()
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = _tmp.name
+    atexit.register(lambda: os.unlink(_tmp.name))
 
 # SEMrush API
 SEMRUSH_API_KEY = os.getenv("SEMRUSH_API_KEY")

@@ -1,6 +1,6 @@
 """BigQuery 데이터 로더 - SEMrush Enterprise 데이터를 BigQuery에 저장"""
 
-from datetime import datetime
+from datetime import datetime, timezone
 import pandas as pd
 from google.cloud import bigquery
 from config import GCP_PROJECT_ID, BQ_DATASET
@@ -53,7 +53,7 @@ class BigQueryLoader:
             return result
 
         df = df.copy()
-        df["_loaded_at"] = datetime.utcnow().isoformat()
+        df["_loaded_at"] = datetime.now(timezone.utc).isoformat()
         df["_source"] = "semrush_enterprise"
 
         table_id = self._full_table_id(table_name)

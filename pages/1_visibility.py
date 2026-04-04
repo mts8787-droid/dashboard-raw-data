@@ -8,10 +8,12 @@ st.set_page_config(page_title="Visibility Tracking", page_icon="📈", layout="w
 st.title("📈 Visibility & Position Tracking")
 
 # ── 초기화 ──
+@st.cache_resource
 def get_client():
     from semrush_client import SEMrushClient
     return SEMrushClient()
 
+@st.cache_resource
 def get_loader():
     from bigquery_loader import BigQueryLoader
     return BigQueryLoader()
@@ -58,6 +60,26 @@ if "visibility_history" in st.session_state:
     df = st.session_state["visibility_history"]
     if not df.empty:
         st.markdown("### Visibility 추이")
+
+        # 수치 컬럼 자동 감지하여 최근 값 메트릭 카드 표시
+        from chart_utils import metric_cards
+        num_cols = df.select_dtypes(include="number").columns.tolist()
+        if num_cols and len(df) >= 2:
+            card_items = []
+            for c in num_cols[:6]:
+                current = df[c].iloc[-1]
+                prev = df[c].iloc[-2]
+                delta = current - prev
+                card_items.append({
+                    "label": c,
+                    "value": current,
+                    "display": f"{current:g}" if abs(current) < 100000 else f"{current:,.0f}",
+                    "delta": round(delta, 2) if delta != 0 else None,
+                    "color": "#3b82f6",
+                })
+            metric_cards(card_items)
+            st.markdown("")
+
         st.line_chart(df)
         st.dataframe(df)
 

@@ -6,10 +6,12 @@ import pandas as pd
 st.set_page_config(page_title="Citations Management", page_icon="📍", layout="wide")
 st.title("📍 Citations & Listing Management")
 
+@st.cache_resource
 def get_client():
     from semrush_client import SEMrushClient
     return SEMrushClient()
 
+@st.cache_resource
 def get_loader():
     from bigquery_loader import BigQueryLoader
     return BigQueryLoader()

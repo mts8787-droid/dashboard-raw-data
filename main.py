@@ -17,6 +17,7 @@
 import argparse
 from semrush_client import SEMrushClient
 from bigquery_loader import BigQueryLoader
+from config import TARGET_DOMAIN
 
 
 def collect_visibility(client: SEMrushClient, loader: BigQueryLoader):
@@ -90,7 +91,7 @@ def main():
     if run_all or args.audit:
         collect_audit(client, loader)
     if run_all or args.analytics:
-        collect_analytics(client, loader, args.domain or client.database)
+        collect_analytics(client, loader, args.domain or TARGET_DOMAIN)
 
     print("\n" + "=" * 50)
     print("완료!")

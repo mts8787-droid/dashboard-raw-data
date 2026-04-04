@@ -7,10 +7,12 @@ from config import TARGET_DOMAIN
 st.set_page_config(page_title="Domain Analytics", page_icon="📊", layout="wide")
 st.title("📊 Domain Analytics")
 
+@st.cache_resource
 def get_client():
     from semrush_client import SEMrushClient
     return SEMrushClient()
 
+@st.cache_resource
 def get_loader():
     from bigquery_loader import BigQueryLoader
     return BigQueryLoader()
@@ -69,8 +71,27 @@ if tabs_data:
     tab_names = [name for name, _ in tabs_data]
     tabs = st.tabs(tab_names)
 
+    from chart_utils import metric_cards
+
     for tab, (name, df) in zip(tabs, tabs_data):
         with tab:
+            # 수치 컬럼 요약 카드
+            num_cols = df.select_dtypes(include="number").columns.tolist()
+            if num_cols:
+                card_items = []
+                colors = ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#6366f1"]
+                for i, c in enumerate(num_cols[:6]):
+                    val = df[c].iloc[0] if len(df) > 0 else 0
+                    card_items.append({
+                        "label": c,
+                        "value": val,
+                        "display": f"{val:,.0f}" if abs(val) >= 100 else f"{val:g}",
+                        "delta": None,
+                        "color": colors[i % len(colors)],
+                    })
+                metric_cards(card_items)
+                st.markdown("")
+
             st.dataframe(df, use_container_width=True)
             csv = df.to_csv(index=False).encode("utf-8")
             st.download_button(f"📥 {name}.csv", csv, f"{name}.csv", "text/csv", key=f"dl_{name}")
