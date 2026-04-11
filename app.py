@@ -57,6 +57,14 @@ with col5:
 
 st.markdown("---")
 
+col6, col7 = st.columns(2)
+with col6:
+    st.markdown("### 📋 Data Overview")
+    st.markdown("스키마, 평균값, 모델별 비교, 일별 추이")
+    st.page_link("pages/6_data_overview.py", label="Data Overview →", icon="📋")
+
+st.markdown("---")
+
 # 사이드바 - 설정 상태
 with st.sidebar:
     st.markdown("## ⚙️ 설정 상태")
