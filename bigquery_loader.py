@@ -7,21 +7,9 @@ from config import GCP_PROJECT_ID, BQ_DATASET
 
 
 class BigQueryLoader:
-    # 엔터프라이즈 테이블 정의
+    # Enterprise Element API 테이블 정의
     TABLES = {
-        # Position Tracking / Visibility
-        "visibility_index": "Visibility Index 추이",
-        "position_tracking": "키워드 순위 추적",
-        # Site Audit
-        "site_audit": "사이트 건강도 스냅샷",
-        # Listing / Citations
-        "citations": "로컬 Citation/리스팅 데이터",
-        # Analytics (기본)
-        "domain_overview": "도메인 개요",
-        "domain_organic_keywords": "오가닉 키워드",
-        "domain_adwords_keywords": "유료 키워드",
-        "backlinks_overview": "백링크 개요",
-        "organic_competitors": "오가닉 경쟁사",
+        "ai_visibility": "AI Visibility — 모델별 일별 브랜드 가시성",
     }
 
     def __init__(self, project_id=None, dataset_id=None):

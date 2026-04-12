@@ -373,12 +373,12 @@ st.markdown("---")
 st.markdown("## SEMrush API 설정")
 
 from config import (
-    SEMRUSH_API_KEY, SEMRUSH_PROJECT_ID, SEMRUSH_CAMPAIGN_ID,
-    SEMRUSH_LISTING_TOKEN, SEMRUSH_DATABASE, TARGET_DOMAIN,
+    SEMRUSH_API_KEY, SEMRUSH_WORKSPACE_ID,
+    SEMRUSH_PROJECT_ID, TARGET_DOMAIN,
 )
 
 with st.form("semrush_settings"):
-    st.markdown("현재 세션에서 SEMrush 설정을 변경할 수 있습니다.")
+    st.markdown("현재 세션에서 SEMrush Enterprise 설정을 변경할 수 있습니다.")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -386,34 +386,23 @@ with st.form("semrush_settings"):
             "SEMrush API Key",
             value=SEMRUSH_API_KEY or "",
             type="password",
-            help="SEMrush 계정 > Subscription Info에서 확인",
+            help="Enterprise API 인증 키",
         )
+        new_workspace_id = st.text_input(
+            "Workspace ID",
+            value=SEMRUSH_WORKSPACE_ID or "",
+            help="Enterprise 워크스페이스 UUID",
+        )
+    with col2:
         new_project_id = st.text_input(
             "Project ID",
             value=SEMRUSH_PROJECT_ID or "",
-            help="SEMrush Projects 페이지 URL에서 확인 (숫자)",
-        )
-        new_campaign_id = st.text_input(
-            "Campaign ID",
-            value=SEMRUSH_CAMPAIGN_ID or "",
-            help="Position Tracking 캠페인 ID (예: 6647718_272401)",
-        )
-    with col2:
-        new_listing_token = st.text_input(
-            "Listing Management Token",
-            value=SEMRUSH_LISTING_TOKEN or "",
-            type="password",
-            help="Listing Management OAuth Bearer Token",
-        )
-        new_database = st.text_input(
-            "SEMrush Database",
-            value=SEMRUSH_DATABASE or "us",
-            help="국가 DB 코드 (us, kr, jp, uk 등)",
+            help="Enterprise 프로젝트 UUID",
         )
         new_domain = st.text_input(
             "Target Domain",
             value=TARGET_DOMAIN or "",
-            help="분석 대상 도메인 (예: example.com)",
+            help="분석 대상 도메인 (예: lg.com)",
         )
 
     submitted = st.form_submit_button("💾 세션에 설정 적용", type="primary")
@@ -421,17 +410,14 @@ with st.form("semrush_settings"):
     if submitted:
         env_updates = {
             "SEMRUSH_API_KEY": new_api_key,
+            "SEMRUSH_WORKSPACE_ID": new_workspace_id,
             "SEMRUSH_PROJECT_ID": new_project_id,
-            "SEMRUSH_CAMPAIGN_ID": new_campaign_id,
-            "SEMRUSH_LISTING_TOKEN": new_listing_token,
-            "SEMRUSH_DATABASE": new_database,
             "TARGET_DOMAIN": new_domain,
         }
         for key, val in env_updates.items():
             if val:
                 os.environ[key] = val
 
-        # cache_resource 초기화 (새 설정으로 클라이언트 재생성)
         st.cache_resource.clear()
 
         st.success("설정이 현재 세션에 적용되었습니다.")

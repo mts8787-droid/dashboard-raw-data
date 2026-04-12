@@ -1,84 +1,74 @@
-"""SEMrush Enterprise 관리 포털 - 메인 대시보드"""
+"""SEMrush Enterprise Dashboard — 메인"""
 
 import streamlit as st
 
 st.set_page_config(
-    page_title="SEMrush Enterprise Admin",
+    page_title="SEMrush Enterprise Dashboard",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-st.title("SEMrush Enterprise Admin Portal")
+st.title("SEMrush Enterprise Dashboard")
+st.caption("SEMrush Enterprise Element API → BigQuery 데이터 파이프라인")
 st.markdown("---")
 
-col1, col2, col3 = st.columns(3)
+# ── 메인 카드 ──
+col1, col2 = st.columns(2)
 
 with col1:
-    st.markdown("### 🔍 Visibility & Position Tracking")
+    st.markdown("### 🤖 AI Visibility")
     st.markdown("""
-    - Visibility Index 조회 및 추이
-    - 키워드 순위 추적
-    - BigQuery 저장
+    - AI 모델별 브랜드 가시성 데이터 수집
+    - 일별 데이터 수집 (search-gpt, perplexity, gpt-5, gemini)
+    - BigQuery 저장 & 조회
     """)
-    st.page_link("pages/1_visibility.py", label="Visibility 관리 →", icon="📈")
+    st.page_link("pages/1_ai_visibility.py", label="AI Visibility →", icon="🤖")
 
 with col2:
-    st.markdown("### 📍 Citations & Listings")
+    st.markdown("### 📋 Data Overview")
     st.markdown("""
-    - 로컬 리스팅 관리
-    - NAP 데이터 조회/수정
-    - Citation 현황
+    - 스키마 & 컬럼 설명
+    - 모델별 평균값 비교
+    - 일별 Visibility / SoV / Position 추이
     """)
-    st.page_link("pages/2_citations.py", label="Citations 관리 →", icon="📍")
+    st.page_link("pages/2_data_overview.py", label="Data Overview →", icon="📋")
+
+st.markdown("---")
+
+col3, col4 = st.columns(2)
 
 with col3:
-    st.markdown("### 🏥 Site Audit")
+    st.markdown("### 🗄️ BigQuery 관리")
     st.markdown("""
-    - 사이트 건강도 점수
-    - 에러/경고/알림 현황
-    - 감사 실행
+    - 테이블 현황 (행 수, 크기)
+    - SQL 쿼리 실행
+    - 빠른 테이블 조회
     """)
-    st.page_link("pages/3_site_audit.py", label="Site Audit →", icon="🏥")
-
-st.markdown("---")
-
-col4, col5 = st.columns(2)
+    st.page_link("pages/3_bigquery.py", label="BigQuery 관리 →", icon="🗄️")
 
 with col4:
-    st.markdown("### 📊 Domain Analytics")
-    st.markdown("도메인 오가닉/유료 트래픽, 백링크, 경쟁사 분석")
-    st.page_link("pages/4_analytics.py", label="Analytics →", icon="📊")
+    st.markdown("### ⚙️ 설정")
+    st.markdown("""
+    - BigQuery 연결 설정
+    - SEMrush API Key 관리
+    - 연결 상태 진단
+    """)
+    st.page_link("pages/4_settings.py", label="설정 →", icon="⚙️")
 
-with col5:
-    st.markdown("### 🗄️ BigQuery 데이터 관리")
-    st.markdown("테이블 현황, 데이터 조회, 수집 이력")
-    st.page_link("pages/5_bigquery.py", label="BigQuery 관리 →", icon="🗄️")
-
-st.markdown("---")
-
-col6, col7 = st.columns(2)
-with col6:
-    st.markdown("### 📋 Data Overview")
-    st.markdown("스키마, 평균값, 모델별 비교, 일별 추이")
-    st.page_link("pages/6_data_overview.py", label="Data Overview →", icon="📋")
-
-st.markdown("---")
-
-# 사이드바 - 설정 상태
+# ── 사이드바 ──
 with st.sidebar:
-    st.markdown("## ⚙️ 설정 상태")
+    st.markdown("## 연결 상태")
 
     from config import (
-        SEMRUSH_API_KEY, SEMRUSH_PROJECT_ID, SEMRUSH_CAMPAIGN_ID,
-        SEMRUSH_LISTING_TOKEN, GCP_PROJECT_ID, TARGET_DOMAIN,
+        SEMRUSH_API_KEY, SEMRUSH_WORKSPACE_ID,
+        SEMRUSH_PROJECT_ID, GCP_PROJECT_ID, TARGET_DOMAIN,
     )
 
     checks = {
         "SEMrush API Key": bool(SEMRUSH_API_KEY),
+        "Workspace ID": bool(SEMRUSH_WORKSPACE_ID),
         "Project ID": bool(SEMRUSH_PROJECT_ID),
-        "Campaign ID": bool(SEMRUSH_CAMPAIGN_ID),
-        "Listing Token": bool(SEMRUSH_LISTING_TOKEN),
         "GCP Project": bool(GCP_PROJECT_ID),
     }
 
@@ -90,5 +80,4 @@ with st.sidebar:
         st.markdown(f"\n**대상 도메인:** `{TARGET_DOMAIN}`")
 
     st.markdown("---")
-    st.page_link("pages/0_settings.py", label="⚙️ 연결 설정 & 가이드", icon="🔧")
-    st.markdown("`.env` 파일에서도 설정을 변경할 수 있습니다.")
+    st.page_link("pages/4_settings.py", label="⚙️ 연결 설정", icon="🔧")
