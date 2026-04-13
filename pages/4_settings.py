@@ -322,41 +322,50 @@ with col3:
 if st.button("🔍 전체 연결 상태 진단"):
     results = []
 
-    # GCP 인증
-    try:
-        from google.cloud import bigquery
-        project = os.getenv("GCP_PROJECT_ID")
-        if not project:
-            results.append(("GCP 프로젝트 ID", "❌", "환경변수 GCP_PROJECT_ID가 비어 있습니다"))
-        else:
-            results.append(("GCP 프로젝트 ID", "✅", project))
-    except ImportError:
-        results.append(("google-cloud-bigquery", "❌", "패키지가 설치되지 않았습니다"))
+    # GCP 프로젝트 ID
+    project = os.getenv("GCP_PROJECT_ID")
+    if project:
+        results.append(("GCP 프로젝트 ID", "✅", project))
+    else:
+        results.append(("GCP 프로젝트 ID", "❌", "환경변수 GCP_PROJECT_ID가 비어 있습니다"))
 
     # 인증 파일
     creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+    creds_json_raw = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
     if creds_path and os.path.exists(creds_path):
         results.append(("서비스 계정 키", "✅", f"파일 확인됨: {creds_path}"))
     elif creds_path:
-        results.append(("서비스 계정 키", "❌", f"파일 없음: {creds_path}"))
-    elif has_creds_json:
-        results.append(("서비스 계정 키", "✅", "환경변수에서 JSON 로드됨"))
+        results.append(("서비스 계정 키", "❌", f"경로 설정됨 but 파일 없음: {creds_path}"))
+    elif creds_json_raw:
+        results.append(("서비스 계정 키", "✅", f"JSON 환경변수 로드됨 ({len(creds_json_raw)}자)"))
     else:
-        results.append(("서비스 계정 키", "❌", "GOOGLE_APPLICATION_CREDENTIALS 미설정"))
+        results.append(("서비스 계정 키", "❌", "GOOGLE_APPLICATION_CREDENTIALS / _JSON 모두 미설정"))
+
+    # SEMrush API
+    semrush_key = os.getenv("SEMRUSH_API_KEY")
+    if semrush_key:
+        results.append(("SEMrush API Key", "✅", f"{semrush_key[:8]}..."))
+    else:
+        results.append(("SEMrush API Key", "❌", "미설정"))
+
+    ws_id = os.getenv("SEMRUSH_WORKSPACE_ID")
+    if ws_id:
+        results.append(("Workspace ID", "✅", f"{ws_id[:8]}..."))
+    else:
+        results.append(("Workspace ID", "❌", "미설정"))
 
     # BigQuery 연결
     try:
         from google.cloud import bigquery
-        project = os.getenv("GCP_PROJECT_ID")
         if project:
             client = bigquery.Client(project=project)
             dataset_ref = f"{project}.{current_dataset}"
             try:
-                ds = client.get_dataset(dataset_ref)
+                client.get_dataset(dataset_ref)
                 table_count = sum(1 for _ in client.list_tables(dataset_ref))
                 results.append(("BigQuery 연결", "✅", f"데이터셋 확인됨 (테이블 {table_count}개)"))
-            except Exception:
-                results.append(("BigQuery 연결", "⚠️", "인증은 성공했으나 데이터셋이 없습니다 (자동 생성 가능)"))
+            except Exception as e:
+                results.append(("BigQuery 연결", "❌", f"데이터셋 접근 실패: {e}"))
         else:
             results.append(("BigQuery 연결", "⏭️", "프로젝트 ID 설정 후 테스트 가능"))
     except Exception as e:

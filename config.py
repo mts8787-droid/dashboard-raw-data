@@ -9,6 +9,14 @@ load_dotenv()
 # GCP 서비스 계정 (Render 환경변수에서 JSON 문자열로 전달)
 _gcp_creds_json = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
 if _gcp_creds_json and not os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
+    # Render가 줄바꿈을 제거하거나 이스케이프할 수 있으므로 정리
+    _gcp_creds_json = _gcp_creds_json.strip()
+    # JSON 유효성 검증
+    try:
+        json.loads(_gcp_creds_json)
+    except json.JSONDecodeError:
+        # 이스케이프된 줄바꿈 복원 시도
+        _gcp_creds_json = _gcp_creds_json.replace("\\n", "\n")
     _tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
     _tmp.write(_gcp_creds_json)
     _tmp.close()
