@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # GCP 서비스 계정 (Render 환경변수에서 JSON 문자열로 전달)
-_gcp_creds_json = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+_gcp_creds_json = os.getenv("GOOGLE_APPLICATION_CREDENTIAL_JSON")
 if _gcp_creds_json and not os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
     # Render가 줄바꿈을 제거하거나 이스케이프할 수 있으므로 정리
     _gcp_creds_json = _gcp_creds_json.strip()

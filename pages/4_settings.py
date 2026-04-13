@@ -251,7 +251,7 @@ with tab_json:
 
                     st.info(
                         "연결 설정이 현재 세션에 적용되었습니다.\n\n"
-                        "**Render 배포 시** 환경변수 `GOOGLE_APPLICATION_CREDENTIALS_JSON`에 "
+                        "**Render 배포 시** 환경변수 `GOOGLE_APPLICATION_CREDENTIAL_JSON`에 "
                         "이 JSON 내용을 그대로 넣으면 됩니다."
                     )
             except json.JSONDecodeError:
@@ -273,7 +273,7 @@ BQ_DATASET=semrush_data
 GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json
 
 # 방법 B: Render 등 클라우드 - JSON 문자열 직접 입력
-GOOGLE_APPLICATION_CREDENTIALS_JSON={"type":"service_account","project_id":"...","private_key":"...","client_email":"...","token_uri":"..."}
+GOOGLE_APPLICATION_CREDENTIAL_JSON={"type":"service_account","project_id":"...","private_key":"...","client_email":"...","token_uri":"..."}
 """, language="bash")
 
     st.markdown("""
@@ -291,12 +291,26 @@ streamlit run app.py
 st.markdown("---")
 st.markdown("## 3단계: 현재 연결 상태")
 
+# 디버그: 환경변수 확인
+with st.expander("🔧 환경변수 디버그 (문제 해결용)"):
+    env_keys = ["GCP_PROJECT_ID", "BQ_DATASET",
+                "GOOGLE_APPLICATION_CREDENTIALS", "GOOGLE_APPLICATION_CREDENTIAL_JSON",
+                "SEMRUSH_API_KEY", "SEMRUSH_WORKSPACE_ID", "SEMRUSH_PROJECT_ID"]
+    for key in env_keys:
+        val = os.getenv(key)
+        if val is None:
+            st.markdown(f"❌ `{key}` = **미설정**")
+        elif key in ("SEMRUSH_API_KEY", "GOOGLE_APPLICATION_CREDENTIAL_JSON"):
+            st.markdown(f"✅ `{key}` = `{val[:20]}...` ({len(val)}자)")
+        else:
+            st.markdown(f"✅ `{key}` = `{val}`")
+
 col1, col2, col3 = st.columns(3)
 
 current_project = os.getenv("GCP_PROJECT_ID", "")
 current_dataset = os.getenv("BQ_DATASET", "semrush_data")
 has_creds_file = bool(os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
-has_creds_json = bool(os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON"))
+has_creds_json = bool(os.getenv("GOOGLE_APPLICATION_CREDENTIAL_JSON"))
 session_connected = st.session_state.get("bq_connected", False)
 
 with col1:
@@ -331,7 +345,7 @@ if st.button("🔍 전체 연결 상태 진단"):
 
     # 인증 파일
     creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-    creds_json_raw = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+    creds_json_raw = os.getenv("GOOGLE_APPLICATION_CREDENTIAL_JSON")
     if creds_path and os.path.exists(creds_path):
         results.append(("서비스 계정 키", "✅", f"파일 확인됨: {creds_path}"))
     elif creds_path:
