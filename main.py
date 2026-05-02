@@ -18,12 +18,20 @@
 """
 
 import argparse
+import sys
 from datetime import datetime, timedelta
 from semrush_client import SEMrushClient
 from bigquery_loader import BigQueryLoader
 
 
-def main():
+def main() -> int:
+    """SEMrush → BigQuery 적재. 종료 코드는 Cloud Run Job/Scheduler가 실패 감지에 사용.
+
+    종료 코드:
+      0 — 성공 (모든 모델 데이터 적재 완료)
+      2 — 부분 실패 (일부 모델 fetch 실패, 적재된 데이터는 있음)
+      1 — 전체 실패 (모든 모델 실패 또는 적재 자체 실패)
+    """
     parser = argparse.ArgumentParser(description="SEMrush Enterprise → BigQuery")
     parser.add_argument("--model", help="특정 AI 모델만 수집 (예: search-gpt)")
     parser.add_argument("--brand", default="LG", help="브랜드 필터 (기본: LG)")
@@ -52,6 +60,7 @@ def main():
     print("=" * 50)
 
     all_frames = []
+    failures = []
     for model in models:
         print(f"\n▶ {model} 수집 중...")
         try:
@@ -64,19 +73,38 @@ def main():
             else:
                 print(f"  → 데이터 없음")
         except Exception as e:
-            print(f"  → 실패: {e}")
+            print(f"  → 실패: {e}", file=sys.stderr)
+            failures.append((model, str(e)))
 
-    if all_frames:
-        import pandas as pd
-        combined = pd.concat(all_frames, ignore_index=True)
-        print(f"\n▶ BigQuery 저장 중... ({len(combined)}행)")
+    if not all_frames:
+        print("\n" + "=" * 50, file=sys.stderr)
+        print(f"전체 실패: 적재할 데이터 없음 (실패 모델 {len(failures)}/{len(models)})", file=sys.stderr)
+        for model, err in failures:
+            print(f"  - {model}: {err}", file=sys.stderr)
+        print("=" * 50, file=sys.stderr)
+        return 1
+
+    import pandas as pd
+    combined = pd.concat(all_frames, ignore_index=True)
+    print(f"\n▶ BigQuery 저장 중... ({len(combined)}행)")
+    try:
         result = loader.load_dataframe(combined, "ai_visibility")
-        print(f"  → {result['status']} ({result['rows']}행)")
+        print(f"  → {result['status']} ({result['rows']}행, 누적 {result.get('total_rows', '?')}행)")
+    except Exception as e:
+        print(f"\n적재 실패: {e}", file=sys.stderr)
+        return 1
 
     print("\n" + "=" * 50)
+    if failures:
+        print(f"부분 완료: {len(models) - len(failures)}/{len(models)} 모델 적재됨")
+        for model, err in failures:
+            print(f"  실패: {model} — {err}", file=sys.stderr)
+        print("=" * 50)
+        return 2
     print("완료!")
     print("=" * 50)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
