@@ -1,132 +1,179 @@
 # Cloud Run Job 배포 절차
 
-`semrush-loader` Cloud Run Job — 매일 새벽 SEMrush API에서 BigQuery로 데이터 적재.
 
-비개발자가 GCP 콘솔만으로 따라 할 수 있게 단계별로 정리. dev 검토 권장 시점은 ⚠️로 표시.
-
----
-
-## 0. 사전 요구
-
-- GCP 프로젝트 생성·결제 연결 완료 (예: `lg-geo-prod`)
-- BigQuery API·Cloud Run API·Cloud Scheduler API·Artifact Registry API 활성화
-- SEMrush Enterprise API Key·Workspace ID 확보
+> **이미 완료된 셋업**은 [어드민 → Data Connection PRD](/admin/data-prd) 참고. 이 문서는 **PRD 끝난 다음 4단계**만 다룬다.
 
 ---
 
-## 1. 서비스 계정 생성 ⚠️ (dev 1회 검토 권장)
+## 0. 현재 상태 (2026-05 기준)
 
-| 항목 | 설명 |
+PIC가 PRD 단계로 이미 완료한 것:
+
+| 항목 | 값 |
 |---|---|
-| 이름 | `semrush-loader-sa` |
-| 역할 | `BigQuery Data Editor` (해당 데이터셋 한정) + `BigQuery Job User` |
-| 키 | **JSON 키 다운로드 — 컨테이너에 환경변수로 주입할 용도** |
+| GCP 프로젝트 | `geo-dashboad-raw` |
+| BigQuery API · 데이터셋 | ✅ 활성, `semrush_data` |
+| 서비스 계정 (writer) | `geo-dashboad-raw-service-accou@geo-dashboad-raw.iam.gserviceaccount.com` |
+| IAM 역할 | `roles/bigquery.dataEditor` + `roles/bigquery.jobUser` |
+| 서비스 계정 키 (JSON) | ✅ 다운로드 완료, Render 환경변수에 등록 |
+| dashboard-raw-data 앱 | ✅ Render web service `semrush-admin-portal`로 작동 중 (Streamlit) |
 
-CLI 예시:
-```bash
-gcloud iam service-accounts create semrush-loader-sa \
-  --display-name "SEMrush BigQuery Loader"
+**남은 일은 4개**: ① Cloud Run Job 전환 → ② 매일 자동 트리거 → ③ reader 권한 → ④ my-geo-newsletter 연결.
 
-# 데이터셋 한정 권한 부여
-gcloud projects add-iam-policy-binding $GCP_PROJECT_ID \
-  --member "serviceAccount:semrush-loader-sa@$GCP_PROJECT_ID.iam.gserviceaccount.com" \
-  --role "roles/bigquery.dataEditor"
+---
 
-gcloud projects add-iam-policy-binding $GCP_PROJECT_ID \
-  --member "serviceAccount:semrush-loader-sa@$GCP_PROJECT_ID.iam.gserviceaccount.com" \
-  --role "roles/bigquery.jobUser"
+## 단계 A — Cloud Run Job으로 전환 (PIC, 1시간)
+
+지금 Streamlit 앱이 web service(상시 가동)로 떠 있는데, 적재 작업은 매일 새벽 한 번이면 되니까 **Cloud Run Job**(필요할 때만 실행되고 끝남)으로 분리. 비용도 줄고 안정적.
+
+### A-1. Artifact Registry에 컨테이너 저장소 만들기 (5분)
+
+GCP 콘솔 → **Artifact Registry** → "저장소 만들기"
+
+| 항목 | 값 |
+|---|---|
+| 이름 | `geo-jobs` |
+| 형식 | Docker |
+| 위치 유형 | 리전 |
+| 리전 | `asia-northeast3` (서울) |
+
+→ "만들기"
+
+### A-2. 컨테이너 빌드 (10분)
+
+GCP 콘솔 → **Cloud Build** → **트리거** → "트리거 만들기"
+
+| 항목 | 값 |
+|---|---|
+| 이름 | `semrush-loader-build` |
+| 이벤트 | "수동 호출" (또는 GitHub push 연동도 가능) |
+| 소스 | GitHub: `mts8787-droid/dashboard-raw-data`, 브랜치 `main` |
+| 구성 | Dockerfile (저장소에 이미 있음) |
+| Dockerfile 위치 | `/Dockerfile` |
+| 이미지 이름 | `asia-northeast3-docker.pkg.dev/geo-dashboad-raw/geo-jobs/semrush-loader:latest` |
+
+→ "만들기" → 만든 트리거 우측 **"실행"** → 5~10분 후 빌드 완료. Artifact Registry에 이미지 등록 확인.
+
+### A-3. Cloud Run Job 생성 (10분)
+
+GCP 콘솔 → **Cloud Run** → **작업** 탭 → "작업 만들기"
+
+| 항목 | 값 |
+|---|---|
+| 컨테이너 이미지 URL | `asia-northeast3-docker.pkg.dev/geo-dashboad-raw/geo-jobs/semrush-loader:latest` |
+| 작업 이름 | `semrush-loader` |
+| 리전 | `asia-northeast3` |
+| 작업 유형 | 작업 (Job) |
+| 최대 재시도 | 1 |
+| 작업 시간 제한 | 30분 |
+| 서비스 계정 | `geo-dashboad-raw-service-accou@geo-dashboad-raw.iam.gserviceaccount.com` |
+
+**컨테이너 → 변수 및 보안 비밀** 탭:
+- Render에 등록된 환경변수 그대로 입력:
+  - `SEMRUSH_API_KEY` (Secret Manager에 저장 권장)
+  - `SEMRUSH_WORKSPACE_ID`
+  - `GCP_PROJECT_ID` = `geo-dashboad-raw`
+  - `BQ_DATASET` = `semrush_data`
+  - `SEMRUSH_DATABASE` = `us`
+  - `TARGET_DOMAIN` = (원래 값)
+  - `GOOGLE_APPLICATION_CREDENTIAL_JSON` (Secret Manager 권장)
+
+> 💡 **Secret Manager 사용법**: GCP 콘솔 → Secret Manager → "보안 비밀 만들기" → 이름 (예: `semrush-api-key`) + 값 입력 → 저장. Cloud Run Job에서 "보안 비밀 참조"로 연결.
+
+**컨테이너 → 인수**:
+- 인수 추가: `--days`
+- 인수 추가: `1`
+
+→ "만들기" → 생성됨.
+
+### A-4. 첫 실행으로 정상 동작 확인 (5분)
+
+만든 작업 클릭 → 우측 상단 **"실행"** → 5~10분 대기.
+
+성공 확인:
+1. **Cloud Run** → `semrush-loader` → 실행 기록 → 가장 최근 실행 → "성공" 표시 + 종료 코드 0
+2. **BigQuery** → `geo-dashboad-raw.semrush_data.ai_visibility` → "미리보기" → 행 추가됨
+
+> 실패 시 §트러블슈팅 표 참고.
+
+---
+
+## 단계 B — 매일 자동 트리거 (PIC, 10분)
+
+GCP 콘솔 → **Cloud Scheduler** → "작업 만들기"
+
+| 항목 | 값 |
+|---|---|
+| 이름 | `semrush-loader-daily` |
+| 리전 | `asia-northeast3` |
+| 빈도 | `0 4 * * *` (매일 새벽 4시) |
+| 시간대 | `Asia/Seoul` |
+| 대상 유형 | HTTP |
+| URL | `https://asia-northeast3-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/geo-dashboad-raw/jobs/semrush-loader:run` |
+| HTTP 메서드 | POST |
+| 인증 헤더 | "OAuth 토큰 추가" |
+| 서비스 계정 | `geo-dashboad-raw-service-accou@geo-dashboad-raw.iam.gserviceaccount.com` |
+
+→ "만들기" → 생성됨. 다음 날 새벽 4시에 자동 실행.
+
+> 💡 만들고 나면 작업 목록에서 "지금 강제 실행" 버튼으로 즉시 테스트 가능.
+
+---
+
+## 단계 C — reader 서비스 계정 추가 (PIC, 15분)
+
+`my-geo-newsletter`(이 시스템)는 BigQuery에서 데이터를 **읽기만** 하면 되므로, 별도의 read-only 서비스 계정을 만들면 안전. (writer 키를 그대로 쓰면 실수로 데이터 덮어쓸 위험)
+
+### C-1. 서비스 계정 생성 (5분, PRD 단계 2 패턴 그대로)
+
+GCP 콘솔 → **IAM 및 관리자** → **서비스 계정** → "서비스 계정 만들기"
+
+| 항목 | 값 |
+|---|---|
+| 이름 | `geo-newsletter-reader` |
+| 설명 | "my-geo-newsletter용 BigQuery 읽기 전용" |
+
+생성 후 **권한 부여** 섹션에서 두 역할:
+- `BigQuery 데이터 뷰어` (`roles/bigquery.dataViewer`)
+- `BigQuery 작업 사용자` (`roles/bigquery.jobUser`)
+
+### C-2. JSON 키 다운로드 (5분, PRD 단계 2-2 패턴 그대로)
+
+만든 서비스 계정 클릭 → **키** 탭 → "키 추가" → "새 키 만들기" → JSON → 다운로드.
+
+> ⚠️ 이 키 파일이 reader 권한의 비밀번호. 절대 GitHub에 올리지 말 것.
+
+---
+
+## 단계 D — my-geo-newsletter에 reader 키 연결 (PIC, 5분)
+
+[Render 대시보드](https://dashboard.render.com) → `geo-newsletter` 서비스 → **Environment** 탭 → 다음 환경변수 추가:
+
+```
+GCP_PROJECT_ID = geo-dashboad-raw
+BQ_DATASET = semrush_data
+GOOGLE_APPLICATION_CREDENTIALS_JSON = (단계 C-2에서 다운로드한 JSON 파일 내용을 통째로 복사 붙여넣기)
 ```
 
-> ⚠️ Phase 2 운영 시 키 파일 대신 **Workload Identity Federation**으로 전환 권장 — dev 검토 1일.
+> **주의**: 변수 이름은 `GOOGLE_APPLICATION_CREDENTIALS_JSON` (끝에 `S`+`_JSON`). dashboard-raw-data의 `GOOGLE_APPLICATION_CREDENTIAL_JSON` (S 없음, Render의 옛 표기)와 다름.
+
+저장 → Render가 자동 재배포 (1~2분).
+
+확인:
+- 어드민 로그인 → 브라우저 주소창에 `https://<your-app>.onrender.com/api/bridge/health` 직접 입력
+- `{"ok":true,"configured":true,"projectId":"geo-dashboad-raw","dataset":"semrush_data"}` 표시되면 성공
+
+추가 확인:
+- `/api/bridge/freshness` → `lastLoadedAt`에 가장 최근 적재 시각이 보이고 `stale: false`
 
 ---
 
-## 2. Secret Manager에 환경변수 저장
+## 운영 (자동, PIC 작업 0)
 
-```bash
-gcloud secrets create semrush-api-key --data-file=- <<< "your-semrush-api-key"
-gcloud secrets create semrush-workspace-id --data-file=- <<< "your-workspace-id"
-gcloud secrets create gcp-credential-json --data-file=path/to/sa-key.json
-```
-
----
-
-## 3. 컨테이너 빌드 + Artifact Registry 푸시
-
-```bash
-# Artifact Registry 저장소 생성 (1회)
-gcloud artifacts repositories create geo-jobs \
-  --repository-format=docker \
-  --location=asia-northeast3
-
-# 컨테이너 빌드·푸시 (Cloud Build 사용 — 로컬 Docker 불필요)
-gcloud builds submit --tag \
-  asia-northeast3-docker.pkg.dev/$GCP_PROJECT_ID/geo-jobs/semrush-loader:latest
-```
-
----
-
-## 4. Cloud Run Job 생성
-
-```bash
-gcloud run jobs create semrush-loader \
-  --image asia-northeast3-docker.pkg.dev/$GCP_PROJECT_ID/geo-jobs/semrush-loader:latest \
-  --region asia-northeast3 \
-  --service-account semrush-loader-sa@$GCP_PROJECT_ID.iam.gserviceaccount.com \
-  --max-retries 1 \
-  --task-timeout 30m \
-  --set-env-vars "GCP_PROJECT_ID=$GCP_PROJECT_ID,BQ_DATASET=semrush_data,SEMRUSH_DATABASE=us,TARGET_DOMAIN=lge.com" \
-  --set-secrets "SEMRUSH_API_KEY=semrush-api-key:latest,SEMRUSH_WORKSPACE_ID=semrush-workspace-id:latest,GOOGLE_APPLICATION_CREDENTIAL_JSON=gcp-credential-json:latest" \
-  --args "--days,1"
-```
-
-`--args "--days,1"`: 매일 실행하므로 1일치만 수집. 초기 백필은 `--days,30` 등으로 1회 수동 실행.
-
----
-
-## 5. Cloud Scheduler 트리거 (매일 새벽 4시 KST)
-
-```bash
-gcloud scheduler jobs create http semrush-loader-daily \
-  --location asia-northeast3 \
-  --schedule "0 4 * * *" \
-  --time-zone "Asia/Seoul" \
-  --uri "https://asia-northeast3-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/$GCP_PROJECT_ID/jobs/semrush-loader:run" \
-  --http-method POST \
-  --oauth-service-account-email semrush-loader-sa@$GCP_PROJECT_ID.iam.gserviceaccount.com
-```
-
----
-
-## 6. 첫 실행 (수동 트리거)
-
-```bash
-# 1일치 — 정상 동작 확인용
-gcloud run jobs execute semrush-loader --region asia-northeast3 --wait
-
-# 백필 30일치 (선택, 초기 데이터 채우기)
-gcloud run jobs execute semrush-loader --region asia-northeast3 \
-  --args "--days,30" --wait
-```
-
-실행 결과는 `gcloud run jobs executions describe ...`로 확인. exit code:
-- `0`: 성공
-- `2`: 부분 실패 (일부 모델만 적재됨, 알림 권장)
-- `1`: 전체 실패 (작업 즉시 점검 필요)
-
----
-
-## 7. 알림 (Cloud Monitoring)
-
-콘솔 → Monitoring → Alerting:
-- 메트릭: `run.googleapis.com/job/completed_execution_count` `result=failed`
-- 채널: Outlook 이메일 (`§4.6`) 또는 Teams Webhook
-
----
-
-## 8. 본 레포(`my-geo-newsletter`)의 reader 연결
-
-`routes/bridge.js`(`@google-cloud/bigquery` 사용)가 동일 데이터셋 read-only 권한으로 조회. 해당 서비스 계정은 별도 — `BigQuery Data Viewer` + `BigQuery Job User` 만 부여.
+이후:
+- 매일 새벽 4시 Cloud Scheduler가 자동 실행
+- 실패 시 콘솔 → **Monitoring → Alerting**에서 알림 룰 설정 가능 (PIC 이메일로)
+- 어드민 신선도 배지에 "데이터 최신화: N시간 전" 자동 표시 (Phase 2 후속 작업에서 편집 화면에 추가됨)
 
 ---
 
@@ -134,12 +181,35 @@ gcloud run jobs execute semrush-loader --region asia-northeast3 \
 
 | 증상 | 원인 후보 | 처리 |
 |---|---|---|
-| `SEMRUSH_API_KEY가 설정되지 않았습니다` | Secret 미바인딩 | `gcloud run jobs describe semrush-loader`로 환경변수 확인 |
-| `403 Forbidden` (BQ) | 서비스 계정 권한 부족 | IAM 콘솔에서 데이터셋 접근 확인 |
-| 적재 행 수 0 | SEMrush 응답 비어있음 | UI에서 "Generate API Request" 결과 확인 |
-| Cloud Build 실패 | Dockerfile 오류 | 로컬 `docker build .` 재현 |
-| 한국 timezone 어긋남 | Scheduler tz 미설정 | `--time-zone "Asia/Seoul"` 확인 |
+| 컨테이너 빌드 실패 | Dockerfile에 누락된 파일 | `dashboard-raw-data` 레포의 Dockerfile 최신 확인 |
+| Cloud Run Job 실행 실패 (`PERMISSION_DENIED`) | 서비스 계정 권한 부족 | IAM에서 `geo-dashboad-raw-service-accou` 역할 확인 |
+| `SEMRUSH_API_KEY가 설정되지 않았습니다` | 환경변수·Secret 미바인딩 | Cloud Run Job → "변수 및 보안 비밀" 탭 점검 |
+| 적재 행 수 0 | SEMrush 응답 비어있음 | dashboard-raw-data 앱(Streamlit)에서 직접 조회해 데이터 있는지 확인 |
+| Scheduler 실행되지만 Job 안 돔 | OAuth 토큰 권한 부족 | Scheduler 작업 → 서비스 계정에 `roles/run.invoker` 부여 |
+| `/api/bridge/health`가 503 | Render 환경변수 미설정 | 단계 D 재확인 |
+| `/api/bridge/health`가 500 | reader 키 형식 오류 | JSON 통째로 한 줄로 복붙 (줄바꿈 포함된 JSON 문자열 그대로) |
+| `/api/bridge/freshness`가 stale: true | 최근 적재 실패 또는 24h 이상 경과 | Cloud Scheduler 실행 이력·Cloud Run Job 로그 확인 |
 
 ---
 
-*v1.0 · 2026-05-02 — Cloud Run Job 초기 배포 가이드*
+## 용어집
+
+| 단어 | 한 줄 설명 | 비유 |
+|---|---|---|
+| **Cloud Run Job** | 한 번 실행되고 끝나는 작업. 서버처럼 계속 떠있지 않음 | 새벽에만 켜지는 공장 |
+| **Cloud Run Service** | 사용자 요청을 받기 위해 항상 떠있는 웹 서버 | 24시 편의점 |
+| **Cloud Scheduler** | 정해진 시각에 작업을 자동 실행 | 알람시계 |
+| **BigQuery** | 거대 데이터를 빠르게 분석하는 GCP 데이터 창고 | 회사 자료실 |
+| **데이터셋(Dataset)** | BigQuery 안의 폴더. 여러 테이블을 묶음 | 자료실 캐비닛 |
+| **테이블(Table)** | 데이터셋 안의 표 데이터 | 캐비닛 안 폴더 1개 |
+| **Service Account** | 사람이 아닌 프로그램의 계정. 특정 권한만 부여 | 청소 로봇용 출입증 |
+| **IAM** | 누가 무엇을 할 수 있는지 권한 관리 | 회사 출입증 시스템 |
+| **Secret Manager** | API 키·비밀번호 안전 저장소 | 비밀번호 금고 |
+| **Artifact Registry** | 컨테이너(앱 패키지) 저장 창고 | 앱스토어의 GCP 버전 |
+| **컨테이너(Container)** | 앱과 실행 환경을 통째로 묶은 패키지 | 도시락 |
+| **백필(Backfill)** | 과거 데이터를 한꺼번에 채워 넣음 | 이사 첫날 짐 한꺼번에 옮기기 |
+| **writer / reader** | 쓰는 쪽 / 읽는 쪽 | dashboard-raw-data가 writer, my-geo-newsletter가 reader |
+
+---
+
+*v2.0 · 2026-05-05 — PRD 후속 단계만 다루도록 재작성. 실제 프로젝트(`geo-dashboad-raw`) + 서비스 계정 반영. PIC 단독 콘솔 클릭으로 4단계 완료 가능.*
