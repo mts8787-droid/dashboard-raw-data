@@ -56,6 +56,28 @@ with col4:
     """)
     st.page_link("pages/4_settings.py", label="설정 →", icon="⚙️")
 
+st.markdown("---")
+
+col5, col6 = st.columns(2)
+
+with col5:
+    st.markdown("### 🧠 스키마 학습")
+    st.markdown("""
+    - BigQuery 쿼리 결과 자동 분석
+    - PIC 검수 (컬럼 설명·분류 입력)
+    - JSON + lineage 스냅샷 저장
+    """)
+    st.page_link("pages/5_schema_learning.py", label="스키마 학습 →", icon="🧠")
+
+with col6:
+    st.markdown("### 📜 스키마 리니어")
+    st.markdown("""
+    - 시간 역순 스키마 변경 이력
+    - 직전 버전 대비 추가·삭제·변경 diff
+    - 컬럼 정의 검색·확인
+    """)
+    st.page_link("pages/6_schema_lineage.py", label="스키마 리니어 →", icon="📜")
+
 # ── 사이드바 ──
 with st.sidebar:
     st.markdown("## 연결 상태")
