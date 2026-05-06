@@ -1,9 +1,9 @@
 {
   "dataset": "pj-my-geo.semrush_data",
   "table": "prompt_master",
-  "saved_at": "2026-05-06T07:34:04.372297+00:00",
-  "saved_by": "init-script",
-  "note": "Phase A 초안 — 시트 §4.1 import (출처: https://docs.google.com/spreadsheets/d/1zgs-BV4gyhR0uGSCX3Mww8loacpDcWcYV-BVMhbUOno)",
+  "saved_at": "2026-05-06T07:48:44.112685+00:00",
+  "saved_by": "ERD-import",
+  "note": "ERD 다이어그램 기반 컬럼 정의 import (PIC 2026-05-06 공유) — 분류체계 마스터 — 14컬럼",
   "row_count_at_save": 0,
   "columns": [
     {
@@ -12,7 +12,7 @@
       "dtype": "int64",
       "nullable": "N",
       "key": "PK",
-      "description": "테이블 내부 고유 식별자 (1부터 순차)",
+      "description": "테이블 내부 고유 식별자",
       "category": "ID/Key",
       "null_pct": null,
       "distinct_count": null,
@@ -23,33 +23,9 @@
       "bq_type": "STRING",
       "dtype": "object",
       "nullable": "N",
-      "key": "FK",
-      "description": "프롬프트 식별자 (14자리: Workspace+CNTR+DIV+CTG+STT+BNS+CEJ+시퀀스)",
+      "key": "PK/FK",
+      "description": "프롬프트 식별자 (14자리: Workspace+CNTR+DIV+CTG+STT+BNS+CEJ+시퀀스). visibility·citation의 FK",
       "category": "ID/Key",
-      "null_pct": null,
-      "distinct_count": null,
-      "sample_values": []
-    },
-    {
-      "name": "start_date",
-      "bq_type": "DATE",
-      "dtype": "date",
-      "nullable": "N",
-      "key": "",
-      "description": "데이터 수집 기준 시작일",
-      "category": "차원(Dimension)",
-      "null_pct": null,
-      "distinct_count": null,
-      "sample_values": []
-    },
-    {
-      "name": "end_date",
-      "bq_type": "DATE",
-      "dtype": "date",
-      "nullable": "N",
-      "key": "",
-      "description": "데이터 수집 기준 종료일",
-      "category": "차원(Dimension)",
       "null_pct": null,
       "distinct_count": null,
       "sample_values": []
@@ -60,68 +36,104 @@
       "dtype": "object",
       "nullable": "N",
       "key": "",
-      "description": "국가 코드 (예: UK, US, DE)",
+      "description": "국가 코드 (UK/US/DE/...)",
       "category": "차원(Dimension)",
       "null_pct": null,
       "distinct_count": null,
       "sample_values": []
     },
     {
-      "name": "brand",
+      "name": "prompt_text",
+      "bq_type": "STRING",
+      "dtype": "object",
+      "nullable": "N",
+      "key": "",
+      "description": "프롬프트 원문 본문",
+      "category": "기타",
+      "null_pct": null,
+      "distinct_count": null,
+      "sample_values": []
+    },
+    {
+      "name": "div",
       "bq_type": "STRING",
       "dtype": "object",
       "nullable": "Y",
       "key": "",
-      "description": "브랜드명 (LG·Samsung 등)",
+      "description": "본부 분류 (ES/MS/HS)",
       "category": "차원(Dimension)",
       "null_pct": null,
       "distinct_count": null,
       "sample_values": []
     },
     {
-      "name": "model",
+      "name": "ctg",
       "bq_type": "STRING",
       "dtype": "object",
       "nullable": "Y",
       "key": "",
-      "description": "LLM 모델명 (Chat GPT·ChatGPT (No Search)·Perplexity 등)",
+      "description": "제품 카테고리 (TV/AC/RA/CO/DW/...)",
       "category": "차원(Dimension)",
       "null_pct": null,
       "distinct_count": null,
       "sample_values": []
     },
     {
-      "name": "position",
+      "name": "stt",
       "bq_type": "STRING",
       "dtype": "object",
       "nullable": "Y",
       "key": "",
-      "description": "노출 위치 (LLM 응답 내 순위, -1=미노출)",
-      "category": "측정값(Metric)",
+      "description": "출시 상태 (L=Launched / U=Unlaunched)",
+      "category": "차원(Dimension)",
       "null_pct": null,
       "distinct_count": null,
       "sample_values": []
     },
     {
-      "name": "mentions",
-      "bq_type": "INT64",
-      "dtype": "int64",
+      "name": "bns",
+      "bq_type": "STRING",
+      "dtype": "object",
       "nullable": "Y",
       "key": "",
-      "description": "언급 수",
-      "category": "측정값(Metric)",
+      "description": "브랜드/논브랜드 (B=Brand / N=Nonbrand)",
+      "category": "차원(Dimension)",
       "null_pct": null,
       "distinct_count": null,
       "sample_values": []
     },
     {
-      "name": "visibility",
+      "name": "cej",
       "bq_type": "STRING",
       "dtype": "object",
       "nullable": "Y",
       "key": "",
-      "description": "가시성 값 (원천은 STRING으로 적재 — 가공 단계에서 decimal로 변환)",
-      "category": "측정값(Metric)",
+      "description": "CEJ 단계 (I=Interest / C=Conversion / E=Experience)",
+      "category": "차원(Dimension)",
+      "null_pct": null,
+      "distinct_count": null,
+      "sample_values": []
+    },
+    {
+      "name": "tpc",
+      "bq_type": "STRING",
+      "dtype": "object",
+      "nullable": "Y",
+      "key": "",
+      "description": "토픽 분류 (PIC 정의 필요)",
+      "category": "차원(Dimension)",
+      "null_pct": null,
+      "distinct_count": null,
+      "sample_values": []
+    },
+    {
+      "name": "prompt_hash",
+      "bq_type": "STRING",
+      "dtype": "object",
+      "nullable": "N",
+      "key": "",
+      "description": "프롬프트 본문 해시 (중복 검출용)",
+      "category": "ID/Key",
       "null_pct": null,
       "distinct_count": null,
       "sample_values": []
@@ -132,7 +144,7 @@
       "dtype": "datetime64[ns]",
       "nullable": "Y",
       "key": "",
-      "description": "데이터 추출 시각",
+      "description": "최초 적재 시각",
       "category": "메타(System)",
       "null_pct": null,
       "distinct_count": null,
@@ -144,11 +156,44 @@
       "dtype": "datetime64[ns]",
       "nullable": "Y",
       "key": "",
-      "description": "데이터 수정 시각",
+      "description": "마지막 수정 시각",
       "category": "메타(System)",
       "null_pct": null,
       "distinct_count": null,
       "sample_values": []
+    },
+    {
+      "name": "active",
+      "bq_type": "INT64",
+      "dtype": "int64",
+      "nullable": "Y",
+      "key": "",
+      "description": "활성 플래그 (tinyint 0/1: 1=활성, 0=비활성)",
+      "category": "차원(Dimension)",
+      "null_pct": null,
+      "distinct_count": null,
+      "sample_values": [],
+      "bq_note": "MySQL tinyint(0,1) → BigQuery INT64로 매핑"
     }
-  ]
+  ],
+  "lineage": {
+    "role": "raw",
+    "frequency": "weekly",
+    "sources": [
+      {
+        "system": "SEMrush API + 분류체계 정의",
+        "frequency": "weekly"
+      }
+    ],
+    "downstream": [
+      "visibility",
+      "citation",
+      "report_visibility",
+      "report_citation"
+    ],
+    "transforms": [
+      "prompt_id 14자리 인코딩: Workspace(1) + CNTR(2) + DIV(2) + CTG(2) + STT(1) + BNS(1) + CEJ(1) + 시퀀스(4)",
+      "prompt_hash로 중복 검출"
+    ]
+  }
 }

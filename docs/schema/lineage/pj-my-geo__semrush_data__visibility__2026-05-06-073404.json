@@ -1,9 +1,0 @@
-{
-  "dataset": "pj-my-geo.semrush_data",
-  "table": "visibility",
-  "saved_at": "2026-05-06T07:34:04.374189+00:00",
-  "saved_by": "init-script",
-  "note": "[빈 스켈레톤] 원천 데이터 — LG 및 경쟁사 가시성 집계 (기간 단위) — 시트에 예시 행만 존재. prompt_master와 동일 형태로 추정되나 스펙 미확정. PIC schema_learning에서 BigQuery 실데이터 가져와 컬럼 등록 필요.",
-  "row_count_at_save": 0,
-  "columns": []
-}

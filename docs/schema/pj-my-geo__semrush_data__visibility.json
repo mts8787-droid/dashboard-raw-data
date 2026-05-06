@@ -1,9 +1,172 @@
 {
   "dataset": "pj-my-geo.semrush_data",
   "table": "visibility",
-  "saved_at": "2026-05-06T07:34:04.374189+00:00",
-  "saved_by": "init-script",
-  "note": "[빈 스켈레톤] 원천 데이터 — LG 및 경쟁사 가시성 집계 (기간 단위) — 시트에 예시 행만 존재. prompt_master와 동일 형태로 추정되나 스펙 미확정. PIC schema_learning에서 BigQuery 실데이터 가져와 컬럼 등록 필요.",
+  "saved_at": "2026-05-06T07:48:44.113180+00:00",
+  "saved_by": "ERD-import",
+  "note": "ERD 다이어그램 기반 컬럼 정의 import (PIC 2026-05-06 공유) — 원천 가시성 — 12컬럼",
   "row_count_at_save": 0,
-  "columns": []
+  "columns": [
+    {
+      "name": "id",
+      "bq_type": "INT64",
+      "dtype": "int64",
+      "nullable": "N",
+      "key": "PK",
+      "description": "테이블 내부 고유 식별자",
+      "category": "ID/Key",
+      "null_pct": null,
+      "distinct_count": null,
+      "sample_values": []
+    },
+    {
+      "name": "prompt_id",
+      "bq_type": "STRING",
+      "dtype": "object",
+      "nullable": "Y",
+      "key": "FK",
+      "description": "prompt_master FK",
+      "category": "ID/Key",
+      "null_pct": null,
+      "distinct_count": null,
+      "sample_values": []
+    },
+    {
+      "name": "start_date",
+      "bq_type": "DATE",
+      "dtype": "date",
+      "nullable": "N",
+      "key": "",
+      "description": "데이터 수집 시작일",
+      "category": "차원(Dimension)",
+      "null_pct": null,
+      "distinct_count": null,
+      "sample_values": []
+    },
+    {
+      "name": "end_date",
+      "bq_type": "DATE",
+      "dtype": "date",
+      "nullable": "N",
+      "key": "",
+      "description": "데이터 수집 종료일",
+      "category": "차원(Dimension)",
+      "null_pct": null,
+      "distinct_count": null,
+      "sample_values": []
+    },
+    {
+      "name": "cntr",
+      "bq_type": "STRING",
+      "dtype": "object",
+      "nullable": "Y",
+      "key": "",
+      "description": "국가 코드",
+      "category": "차원(Dimension)",
+      "null_pct": null,
+      "distinct_count": null,
+      "sample_values": []
+    },
+    {
+      "name": "brand",
+      "bq_type": "STRING",
+      "dtype": "object",
+      "nullable": "Y",
+      "key": "",
+      "description": "브랜드명 (LG·Samsung 등)",
+      "category": "차원(Dimension)",
+      "null_pct": null,
+      "distinct_count": null,
+      "sample_values": []
+    },
+    {
+      "name": "model",
+      "bq_type": "STRING",
+      "dtype": "object",
+      "nullable": "Y",
+      "key": "",
+      "description": "LLM 모델명",
+      "category": "차원(Dimension)",
+      "null_pct": null,
+      "distinct_count": null,
+      "sample_values": []
+    },
+    {
+      "name": "position",
+      "bq_type": "STRING",
+      "dtype": "object",
+      "nullable": "Y",
+      "key": "",
+      "description": "LLM 응답 내 노출 위치 (-1=미노출)",
+      "category": "측정값(Metric)",
+      "null_pct": null,
+      "distinct_count": null,
+      "sample_values": []
+    },
+    {
+      "name": "mentions",
+      "bq_type": "INT64",
+      "dtype": "int64",
+      "nullable": "Y",
+      "key": "",
+      "description": "언급 수",
+      "category": "측정값(Metric)",
+      "null_pct": null,
+      "distinct_count": null,
+      "sample_values": []
+    },
+    {
+      "name": "visibility",
+      "bq_type": "STRING",
+      "dtype": "object",
+      "nullable": "Y",
+      "key": "",
+      "description": "가시성 값 (원천 STRING — report에서 평균%로 가공)",
+      "category": "측정값(Metric)",
+      "null_pct": null,
+      "distinct_count": null,
+      "sample_values": []
+    },
+    {
+      "name": "input_at",
+      "bq_type": "TIMESTAMP",
+      "dtype": "datetime64[ns]",
+      "nullable": "Y",
+      "key": "",
+      "description": "적재 시각",
+      "category": "메타(System)",
+      "null_pct": null,
+      "distinct_count": null,
+      "sample_values": []
+    },
+    {
+      "name": "updated_at",
+      "bq_type": "TIMESTAMP",
+      "dtype": "datetime64[ns]",
+      "nullable": "Y",
+      "key": "",
+      "description": "수정 시각",
+      "category": "메타(System)",
+      "null_pct": null,
+      "distinct_count": null,
+      "sample_values": []
+    }
+  ],
+  "lineage": {
+    "role": "raw",
+    "frequency": "weekly",
+    "sources": [
+      {
+        "system": "SEMrush API",
+        "frequency": "weekly"
+      },
+      {
+        "table": "prompt_master",
+        "join_on": "prompt_id"
+      }
+    ],
+    "downstream": [
+      "report_visibility"
+    ],
+    "transforms": []
+  }
 }

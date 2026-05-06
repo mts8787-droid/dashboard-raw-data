@@ -1,9 +1,0 @@
-{
-  "dataset": "pj-my-geo.semrush_data",
-  "table": "citation",
-  "saved_at": "2026-05-06T07:34:04.374445+00:00",
-  "saved_by": "init-script",
-  "note": "[빈 스켈레톤] 원천 데이터 — 프롬프트 기반 인용 집계 (월 단위 전달) — 시트에 컬럼 정의 없음. PIC가 BigQuery 실테이블에서 schema_learning으로 등록 필요.",
-  "row_count_at_save": 0,
-  "columns": []
-}

@@ -3,8 +3,8 @@
 흐름:
 1. 데이터셋·테이블 선택 (또는 임의 SQL)
 2. 시스템이 컬럼별 자동 분석 (dtype, null%, distinct count, sample values)
-3. PIC가 컬럼별 description·category 입력
-4. 저장 → docs/schema/<table>.json + lineage 스냅샷 + lineage.md
+3. PIC가 컬럼별 description·category + 테이블 lineage 입력
+4. 저장 → docs/schema/<table>.json (테이블별 단일 latest, 시간 스냅샷 X)
 """
 
 import streamlit as st
@@ -159,21 +159,98 @@ for i, col in enumerate(analyzed):
         edited_cols.append(edited)
 
 
-# ── 3단계: 저장 (lineage 스냅샷 추가) ──────────────────────────────────
-st.markdown("## 3단계 — 저장")
-note = st.text_input("변경 메모 (lineage.md에 기록됨)",
-                     placeholder="예: 컬럼 sov 정의 보강, prompts_mentioned 의미 명시")
+# ── 3단계: 리니지 입력 (이 테이블의 데이터 흐름) ────────────────
+st.markdown("## 3단계 — 데이터 리니지")
+st.caption("이 테이블이 어디서 왔고 어디로 가는지 기록 — 테이블별 단일 latest")
+
+prev_lin = prev.get("lineage") or {}
+
+c1, c2 = st.columns(2)
+with c1:
+    role = st.selectbox(
+        "역할",
+        ["raw", "transform", "mapping"],
+        index=["raw", "transform", "mapping"].index(prev_lin.get("role", "raw"))
+            if prev_lin.get("role") in {"raw", "transform", "mapping"} else 0,
+    )
+with c2:
+    freq = st.selectbox(
+        "주기",
+        ["daily", "weekly", "monthly", "static"],
+        index=["daily", "weekly", "monthly", "static"].index(prev_lin.get("frequency", "weekly"))
+            if prev_lin.get("frequency") in {"daily", "weekly", "monthly", "static"} else 1,
+    )
+
+st.markdown("#### 상류 (Sources)")
+st.caption("외부 시스템: `system: SEMrush API`. 다른 테이블: `table: visibility, join_on: prompt_id`")
+sources_raw = st.text_area(
+    "한 줄에 하나씩 입력 (JSON 객체)",
+    value="\n".join([
+        ('{"system": "' + s.get("system", "") + '", "frequency": "' + s.get("frequency", "") + '"}')
+        if "system" in s else
+        ('{"table": "' + s.get("table", "") + '", "join_on": "' + s.get("join_on", "") + '"}')
+        for s in (prev_lin.get("sources") or [])
+    ]),
+    height=80,
+    placeholder='{"system": "SEMrush API", "frequency": "weekly"}\n{"table": "prompt_master", "join_on": "prompt_id"}',
+)
+
+st.markdown("#### 하류 (Downstream)")
+downstream_raw = st.text_input(
+    "쉼표로 구분된 하류 테이블 이름",
+    value=", ".join(prev_lin.get("downstream") or []),
+    placeholder="report_visibility, report_citation",
+)
+
+st.markdown("#### 변환 규칙 (transforms)")
+transforms_raw = st.text_area(
+    "한 줄에 하나",
+    value="\n".join(prev_lin.get("transforms") or []),
+    height=80,
+    placeholder="GROUP BY start_date, end_date, cntr, ctg, bns, brand\nAVG(visibility) → visibility (decimal(5,2))",
+)
+
+
+# ── 4단계: 저장 ──────────────────────────────────────────────────────
+import json as _json
+
+st.markdown("## 4단계 — 저장")
+note = st.text_input("변경 메모", placeholder="예: ERD 기반 컬럼 정의 보강")
 
 if st.button("💾 스키마 저장", type="primary"):
+    # lineage 파싱
+    sources = []
+    for line in (sources_raw or "").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            obj = _json.loads(line)
+            if isinstance(obj, dict):
+                sources.append(obj)
+        except Exception:
+            st.warning(f"sources 파싱 무시: {line}")
+
+    downstream = [s.strip() for s in (downstream_raw or "").split(",") if s.strip()]
+    transforms = [s.strip() for s in (transforms_raw or "").splitlines() if s.strip()]
+
+    lineage = {
+        "role": role,
+        "frequency": freq,
+        "sources": sources,
+        "downstream": downstream,
+        "transforms": transforms,
+    }
     try:
         doc = schema_store.save_schema(
             dataset=dataset_full,
             table=table_name,
             columns=edited_cols,
+            lineage=lineage,
             row_count=len(df),
             note=note,
         )
-        st.success(f"저장 완료. lineage 스냅샷에 추가됨.")
+        st.success(f"저장 완료. `{table_name}.json` 갱신됨.")
         st.json(doc, expanded=False)
     except Exception as e:
         st.error(f"저장 실패: {e}")

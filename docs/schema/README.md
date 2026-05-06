@@ -1,75 +1,67 @@
 # 데이터 스키마 디렉터리
 
-`pj-my-geo.semrush_data` 데이터셋의 BigQuery 테이블 스키마를 PIC가 학습·검수해 누적 저장한다.
+`pj-my-geo.semrush_data` 데이터셋의 7개 테이블 — 컬럼 정의 + 데이터 리니지(흐름).
 
-**원천 명세서**: [Ascent DB 데이터 스키마 시트](https://docs.google.com/spreadsheets/d/1zgs-BV4gyhR0uGSCX3Mww8loacpDcWcYV-BVMhbUOno) — 원본 정의·Prompt ID 규칙·변환 흐름. 시트 변경 시 본 디렉터리도 갱신해야 함.
-
-**현재 등록된 7개 테이블**:
-
-| 분류 | 테이블 | 컬럼 수 | 비고 |
-|---|---|:---:|---|
-| 로우 (Ascent DB 적재) | `prompt_master` | 12 | 시트 §4.1 import |
-|  | `visibility` | 0 | 빈 스켈레톤 — PIC가 schema_learning에서 채울 것 |
-|  | `citation` | 0 | 빈 스켈레톤 |
-| 가공 (리포트) | `report_visibility` | 10 | 시트 §4.3 import. visibility ⨝ prompt_master |
-|  | `report_citation` | 0 | 빈 스켈레톤. citation ⨝ prompt_master ⨝ domain_mapping |
-|  | `domain_mapping` | 0 | 빈 스켈레톤. 도메인 주소 → 도메인 유형 |
-|  | `competitor_brand` | 0 | 빈 스켈레톤. LG/경쟁사 분류 |
+**원천 명세서**:
+- [Ascent DB 데이터 스키마 시트](https://docs.google.com/spreadsheets/d/1zgs-BV4gyhR0uGSCX3Mww8loacpDcWcYV-BVMhbUOno) — 변환 흐름·Prompt ID 규칙
+- ERD 다이어그램 (PIC 2026-05-06 공유) — 7개 테이블 컬럼 정의 (실 스키마)
 
 ## 파일 구조
 
 ```
 docs/schema/
-├── README.md                                            ← 이 파일
-├── lineage.md                                           ← 시간 역순 변경 이력 (CHANGELOG)
-├── pj-my-geo__semrush_data__ai_visibility.json          ← 현재 스키마 (latest)
-└── lineage/
-    ├── pj-my-geo__semrush_data__ai_visibility__2026-05-06-091500.json
-    ├── pj-my-geo__semrush_data__ai_visibility__2026-05-15-100000.json
-    └── ...                                              ← 시간 역순 누적 스냅샷
+├── README.md                                       ← 이 파일
+└── pj-my-geo__semrush_data__<table>.json           ← 테이블별 단일 latest (7개)
 ```
 
-## 누가·어떻게 갱신하나?
+테이블별 1개 JSON에 컬럼 정의 + 리니지(상류·하류·변환 규칙)를 모두 담는다.
+시간 역순 변경 이력은 별도로 관리하지 않음 (필요 시 git log로 추적).
 
-**누가**: PIC (이 레포의 Streamlit 관리자 — `pages/5_schema_learning.py`)
+## 7개 테이블 현황
 
-**언제**:
-- BigQuery 테이블에 새 컬럼이 생겼을 때
-- 컬럼 의미·정의가 명확해졌을 때 (PIC가 처음 보고 의미를 정리한 시점)
-- SEMrush API 변경으로 데이터 형태가 바뀌었을 때
+| 분류 | 테이블 | 컬럼 | 역할·주기 |
+|---|---|:---:|---|
+| 분류체계 | `prompt_master` | 14 | raw / weekly |
+| 원천 | `visibility` | 12 | raw / weekly |
+|  | `citation` | 13 | raw / monthly |
+| 리포트 | `report_visibility` | 9 | transform / weekly (visibility ⨝ prompt_master) |
+|  | `report_citation` | 24 | transform / monthly (citation ⨝ prompt_master ⨝ domain_mapping) |
+| 매핑 | `competitor_brand` | 4 | mapping / static |
+|  | `domain_mapping` | 3 | mapping / static |
 
-**방법**:
-1. Streamlit `🧠 스키마 학습` 페이지 열기
-2. 테이블 선택 → "가져와서 분석" 클릭
-3. 자동 분석 결과 확인 (각 컬럼 dtype·null%·distinct·sample)
-4. 컬럼별 **설명** + **분류**(차원/측정값/메타/ID/기타) 입력 또는 수정
-5. 변경 메모 적기 (예: "sov 정의 보강")
-6. **💾 스키마 저장** 클릭
+## JSON 구조
 
-저장 시 자동으로:
-- `<dataset>__<table>.json` (latest) 갱신
-- `lineage/<...>__<timestamp>.json` 새 스냅샷 추가
-- `lineage.md`에 한 행 추가 (시간 역순)
+```json
+{
+  "dataset": "pj-my-geo.semrush_data",
+  "table": "report_visibility",
+  "saved_at": "...",
+  "columns": [
+    { "name": "...", "bq_type": "STRING", "nullable": "Y", "key": "PK",
+      "description": "...", "category": "차원(Dimension)",
+      "source_file": "...", "source_column": "...", "derivation": "..." }
+  ],
+  "lineage": {
+    "role": "transform",
+    "frequency": "weekly",
+    "sources": [
+      { "system": "SEMrush API", "frequency": "weekly" } |
+      { "table": "visibility", "join_on": "prompt_id" }
+    ],
+    "downstream": ["report_visibility"],
+    "transforms": ["GROUP BY ...", "AVG(...) ..."]
+  }
+}
+```
 
-## 시간 역순 보기
+## 갱신 방법
 
-`📜 스키마 리니지` 페이지 또는 `lineage.md` 직접 열기. 각 스냅샷의 직전 버전 대비 diff(추가·삭제·변경 컬럼)도 확인 가능.
+**Streamlit `🧠 스키마 학습`** 페이지에서:
+1. 테이블 선택 → BigQuery 실데이터 가져와 자동 분석
+2. 컬럼별 description·category 검수
+3. 리니지(role/주기/sources/downstream/transforms) 입력
+4. 저장 → `<table>.json` 갱신 (시간 스냅샷 X, 단일 latest)
 
 ## reader(my-geo-newsletter) 측 사용
 
-`my-geo-newsletter` 레포의 `routes/bridge.js`가 본 디렉터리의 latest JSON을 참고해 매핑 코드를 작성한다. 컬럼이 변경되면:
-1. 본 디렉터리의 lineage가 갱신됨
-2. `BIGQUERY_SCHEMA.md` (이 디렉터리와 별개로, 두 레포 사이 명세 문서)도 동기화 필요
-3. reader 코드(브릿지) 갱신 후 reader 레포에 PR
-
-자세한 변경 절차: 상위 레포의 `BIGQUERY_SCHEMA.md` §스키마 변경 절차 참고.
-
-## 컬럼 분류 의미
-
-| 분류 | 예시 | 의미 |
-|---|---|---|
-| **차원(Dimension)** | `tag`, `model`, `date`, `country` | 데이터를 그룹·필터·축으로 사용 |
-| **측정값(Metric)** | `visibility`, `sov`, `mentions`, `prompts` | 수치 — 평균·합·비교 가능 |
-| **메타(System)** | `_loaded_at`, `_source` | 시스템이 자동 추가, 사용자 입력 아님 |
-| **ID/Key** | `prompt_id`, `request_id` | 식별자 — 조인 키, 측정값으로 다루지 않음 |
-| **기타** | — | 위 4개 분류 어디에도 안 맞음 (드물게) |
+`my-geo-newsletter`의 `routes/bridge.js`가 본 디렉터리의 latest JSON을 참고해 매핑 코드를 작성. 컬럼 변경 시 양 레포 동기화 필요. 자세한 절차: 상위 레포 `BIGQUERY_SCHEMA.md` 참고.

@@ -1,9 +1,0 @@
-{
-  "dataset": "pj-my-geo.semrush_data",
-  "table": "domain_mapping",
-  "saved_at": "2026-05-06T07:34:04.374908+00:00",
-  "saved_by": "init-script",
-  "note": "[빈 스켈레톤] 도메인 주소 → 도메인 유형 매핑 테이블 — domain_type 분류 기준 미확정. PIC가 BigQuery 적재 후 등록 필요.",
-  "row_count_at_save": 0,
-  "columns": []
-}
