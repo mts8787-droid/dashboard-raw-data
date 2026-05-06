@@ -1,4 +1,8 @@
 """스키마 저장·로드·diff 유틸리티
+"""
+from __future__ import annotations
+
+_DOC = """
 
 저장 위치:
 - docs/schema/<dataset>__<table>.json     ← 현재 스키마 (latest)

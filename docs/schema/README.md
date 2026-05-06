@@ -2,6 +2,20 @@
 
 `pj-my-geo.semrush_data` 데이터셋의 BigQuery 테이블 스키마를 PIC가 학습·검수해 누적 저장한다.
 
+**원천 명세서**: [Ascent DB 데이터 스키마 시트](https://docs.google.com/spreadsheets/d/1zgs-BV4gyhR0uGSCX3Mww8loacpDcWcYV-BVMhbUOno) — 원본 정의·Prompt ID 규칙·변환 흐름. 시트 변경 시 본 디렉터리도 갱신해야 함.
+
+**현재 등록된 7개 테이블**:
+
+| 분류 | 테이블 | 컬럼 수 | 비고 |
+|---|---|:---:|---|
+| 로우 (Ascent DB 적재) | `prompt_master` | 12 | 시트 §4.1 import |
+|  | `visibility` | 0 | 빈 스켈레톤 — PIC가 schema_learning에서 채울 것 |
+|  | `citation` | 0 | 빈 스켈레톤 |
+| 가공 (리포트) | `report_visibility` | 10 | 시트 §4.3 import. visibility ⨝ prompt_master |
+|  | `report_citation` | 0 | 빈 스켈레톤. citation ⨝ prompt_master ⨝ domain_mapping |
+|  | `domain_mapping` | 0 | 빈 스켈레톤. 도메인 주소 → 도메인 유형 |
+|  | `competitor_brand` | 0 | 빈 스켈레톤. LG/경쟁사 분류 |
+
 ## 파일 구조
 
 ```

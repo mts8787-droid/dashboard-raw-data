@@ -78,6 +78,19 @@ with col6:
     """)
     st.page_link("pages/6_schema_lineage.py", label="스키마 리니지 →", icon="📜")
 
+st.markdown("---")
+
+col7, _ = st.columns(2)
+
+with col7:
+    st.markdown("### 🛠️ 스키마 DDL")
+    st.markdown("""
+    - 저장된 스키마 → BigQuery `CREATE TABLE` 자동 생성
+    - 파티션·클러스터링 옵션
+    - 변환 쿼리 템플릿 (report_visibility 등)
+    """)
+    st.page_link("pages/7_schema_ddl.py", label="스키마 DDL →", icon="🛠️")
+
 # ── 사이드바 ──
 with st.sidebar:
     st.markdown("## 연결 상태")
