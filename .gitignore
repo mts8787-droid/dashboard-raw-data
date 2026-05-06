@@ -3,6 +3,9 @@ __pycache__/
 *.pyc
 *.json
 !requirements.txt
+# 스키마 lineage JSON은 추적 대상 (PIC가 검수·승인한 결과물)
+!docs/schema/*.json
+!docs/schema/lineage/*.json
 .streamlit/secrets.toml
 venv/
 .venv/

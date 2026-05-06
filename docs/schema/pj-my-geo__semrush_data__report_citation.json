@@ -1,0 +1,9 @@
+{
+  "dataset": "pj-my-geo.semrush_data",
+  "table": "report_citation",
+  "saved_at": "2026-05-06T07:34:04.374686+00:00",
+  "saved_by": "init-script",
+  "note": "[빈 스켈레톤] 리포트용 — citation ⨝ prompt_master ⨝ domain_mapping 결과 — 변환 규칙: Source 정제, Domain 추출, Scnd_depth 생성. 컬럼 명세 미확정.",
+  "row_count_at_save": 0,
+  "columns": []
+}
