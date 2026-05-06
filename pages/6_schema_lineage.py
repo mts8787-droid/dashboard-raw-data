@@ -1,4 +1,4 @@
-"""스키마 리니어 (Lineage) — 시간순 변경 이력
+"""스키마 리니지 (Lineage) — 시간순 변경 이력
 
 - 좌측: 저장된 스냅샷 시간 역순 리스트
 - 우측: 선택한 스냅샷 상세 + 직전 버전과의 diff
@@ -7,8 +7,8 @@
 import streamlit as st
 import schema_store
 
-st.set_page_config(page_title="스키마 리니어", page_icon="📜", layout="wide")
-st.title("📜 데이터 스키마 리니어")
+st.set_page_config(page_title="스키마 리니지", page_icon="📜", layout="wide")
+st.title("📜 데이터 스키마 리니지")
 st.caption("PIC가 학습·승인한 스키마 스냅샷의 시간 역순 이력")
 
 

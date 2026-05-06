@@ -149,7 +149,7 @@ def update_lineage_md(dataset: str, table: str, ts: str, columns: list, note: st
 
     if not LINEAGE_MD.exists():
         LINEAGE_MD.write_text(
-            "# 데이터 스키마 리니어 (Lineage)\n\n"
+            "# 데이터 스키마 리니지 (Lineage)\n\n"
             "PIC가 BigQuery 쿼리 결과로부터 학습·승인한 스키마 변경 이력 (시간 역순).\n\n"
             "각 행은 `docs/schema/lineage/<file>.json` 스냅샷에 대응. 자세한 컬럼 정의는 JSON 참조.\n\n"
             "| 시각 | 데이터셋 | 테이블 | 컬럼 수 | 작성자 | 메모 |\n"
