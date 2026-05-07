@@ -33,7 +33,7 @@ my-geo-newsletter (reader, 데이터를 읽음)
 |---|---|
 | GCP 프로젝트 | `lg-geo-prod` (Phase 2 셋업 시 결정) |
 | 데이터셋(Dataset) | `semrush_data` |
-| 첫 테이블 | `ai_visibility` (AI 모델별 LG 가시성) |
+| 첫 테이블 | `L0_Raw_visibility` (AI 모델별 LG 가시성) |
 
 ### "신선도(stale)"가 뭔가요?
 
@@ -44,40 +44,48 @@ my-geo-newsletter (reader, 데이터를 읽음)
 ### PIC가 직접 BigQuery 화면을 봐야 할 때는?
 
 **거의 없음.** 어드민의 신선도 배지로 충분. 굳이 본다면:
-- 데이터 새로 들어왔는지 확인: GCP 콘솔 → BigQuery → `ai_visibility` 테이블 → "미리보기"
+- 데이터 새로 들어왔는지 확인: GCP 콘솔 → BigQuery → `L0_Raw_visibility` 테이블 → "미리보기"
 - 직접 SQL은 dev 영역
 
 ---
 
 ## 3. 테이블 정의 (dev용)
 
-### `ai_visibility` — AI 검색 가시성 (모델별·일별)
+### `L0_Raw_visibility` — AI 검색 가시성 (모델별·일별)
 
-`SEMrush Enterprise Element API → ai_visibility` 응답을 그대로 적재 + 4개 시스템 컬럼 추가.
+`SEMrush Enterprise Element API → L0_Raw_visibility` 응답을 적재. 스키마는 `bigquery_loader.py`의 `SCHEMAS["L0_Raw_visibility"]`에 명시적으로 정의되어 있다 (autodetect 미사용).
 
-**시스템 컬럼** (writer가 항상 추가)
+**SEMrush API 응답 컬럼** (API `blocks.data[]`에서 수신)
 
 | 컬럼 | 타입 | 의미 |
 |---|---|---|
-| `_loaded_at` | `TIMESTAMP` | 적재 시점 (UTC ISO8601) |
-| `_source` | `STRING` | 원천, 항상 `"semrush_enterprise"` |
-| `model` | `STRING` | AI 모델 (`search-gpt`·`perplexity`·`gpt-5`·`gemini-2.5-flash`·`copilot`·`claude`·`meta-ai`) |
-| `date` | `STRING` (YYYY-MM-DD) | 데이터 일자 |
+| `tag` | `STRING` | 카테고리/제품 태그 (계층 구조: `HS__REF__launched__Brand`) |
+| `visibility` | `FLOAT` | AI 검색 가시성 (0~1, 높을수록 좋음) |
+| `sov` | `FLOAT` | Share of Voice — 점유율 |
+| `avg_position` | `FLOAT` | AI 응답 내 평균 순위 (낮을수록 좋음) |
+| `mentions` | `INTEGER` | AI 응답에서 브랜드 언급 횟수 |
+| `prompts` | `INTEGER` | 전체 프롬프트(질문) 수 |
+| `prompts_mentioned` | `FLOAT` | 브랜드가 언급된 프롬프트 수 |
+| `unique_prompts` | `INTEGER` | 고유 프롬프트 수 |
 
-**SEMrush 응답 컬럼** (autodetect, 변경 가능)
+**시스템 컬럼** (writer 코드가 추가)
 
-SEMrush 측에서 컬럼 이름·타입을 변경할 수 있음. BigQuery `autodetect`로 자동 감지. 현재 시점 컬럼은:
-```bash
-bq show --schema {project}.semrush_data.ai_visibility
-```
+| 컬럼 | 타입 | 추가 위치 | 의미 |
+|---|---|---|---|
+| `model` | `STRING` | `semrush_client.py` | AI 모델 (`search-gpt`·`perplexity`·`gpt-5`·`gemini-2.5-flash`·`copilot`·`claude`·`meta-ai`) |
+| `date` | `DATE` | `semrush_client.py` | 데이터 일자 |
+| `_loaded_at` | `STRING` | `bigquery_loader.py` | 적재 시점 (UTC ISO8601) |
+| `_source` | `STRING` | `bigquery_loader.py` | 원천, 항상 `"semrush_enterprise"` |
+
+**중복 방지**: 적재 시 동일 `date` + `model` 조합의 기존 행을 삭제 후 APPEND.
 
 **파티션·클러스터링 (권장)**
 
 ```sql
-CREATE OR REPLACE TABLE `{project}.semrush_data.ai_visibility`
-PARTITION BY DATE(date)
+CREATE OR REPLACE TABLE `{project}.semrush_data.L0_Raw_visibility`
+PARTITION BY date
 CLUSTER BY model, _source AS
-SELECT * FROM `{project}.semrush_data.ai_visibility`;
+SELECT * FROM `{project}.semrush_data.L0_Raw_visibility`;
 ```
 
 미적용 시 reader가 풀 스캔 → 비용 증가.
@@ -91,7 +99,7 @@ SELECT * FROM `{project}.semrush_data.ai_visibility`;
 ```sql
 -- 최근 7일, LG, 모델별 일평균 가시성
 SELECT model, date, AVG(visibility) AS visibility_avg
-FROM `{project}.semrush_data.ai_visibility`
+FROM `{project}.semrush_data.L0_Raw_visibility`
 WHERE date BETWEEN DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) AND CURRENT_DATE()
   AND _source = 'semrush_enterprise'
 GROUP BY model, date
@@ -162,4 +170,4 @@ ORDER BY date DESC, model;
 
 ---
 
-*v1.1 · 2026-05-05 — PIC용 §1·§2, dev용 §3~5, 용어집 §6로 분리.*
+*v1.2 · 2026-05-08 — 명시적 스키마 정의, date STRING→DATE 마이그레이션, 중복 방지 반영.*

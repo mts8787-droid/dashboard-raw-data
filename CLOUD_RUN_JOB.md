@@ -92,7 +92,7 @@ GCP 콘솔 → **Cloud Run** → **작업** 탭 → "작업 만들기"
 
 성공 확인:
 1. **Cloud Run** → `semrush-loader` → 실행 기록 → 가장 최근 실행 → "성공" 표시 + 종료 코드 0
-2. **BigQuery** → `pj-my-geo.semrush_data.ai_visibility` → "미리보기" → 행 추가됨
+2. **BigQuery** → `pj-my-geo.semrush_data.L0_Raw_visibility` → "미리보기" → 행 추가됨
 
 > 실패 시 §트러블슈팅 표 참고.
 

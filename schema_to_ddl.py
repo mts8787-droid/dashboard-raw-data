@@ -2,7 +2,7 @@
 
 용도:
 - latest schema JSON을 받아 CREATE TABLE 문 생성
-- (선택) 변환 쿼리 (report_visibility = visibility ⨝ prompt_master) 템플릿 생성
+- (선택) 변환 쿼리 (L1_report_visibility = L1_visibility ⨝ L0_Raw_prompt_master) 템플릿 생성
 """
 from __future__ import annotations
 
@@ -97,26 +97,26 @@ def schema_to_describe(schema: dict) -> str:
     )
 
 
-# ─── 변환 쿼리: report_visibility = visibility ⨝ prompt_master ─
-def build_report_visibility_query(*,
-                                  visibility_table: str = "visibility",
-                                  prompt_master_table: str = "prompt_master",
+# ─── 변환 쿼리: L1_report_visibility = L1_visibility ⨝ L0_Raw_prompt_master ─
+def build_L1_report_visibility_query(*,
+                                  visibility_table: str = "L1_visibility",
+                                  prompt_master_table: str = "L0_Raw_prompt_master",
                                   dataset: str = "pj-my-geo.semrush_data") -> str:
-    """시트 §4.3 report_visibility 생성 쿼리 템플릿.
+    """시트 §4.3 L1_report_visibility 생성 쿼리 템플릿.
 
     Group By 기준: start_date, end_date, cntr, ctg, bns, brand
     visibility = AVG(visibility) %
-    div/ctg/stt/bns는 prompt_master에서 prompt_id+cntr 조인으로 가져옴.
+    div/ctg/stt/bns는 L0_Raw_prompt_master에서 prompt_id+cntr 조인으로 가져옴.
 
-    ※ prompt_master에 div/ctg/stt/bns 컬럼이 없으면 prompt_id에서 SUBSTR로 파싱해야 함.
-    아래 템플릿은 prompt_master에 컬럼이 있다고 가정 — PIC가 실 스키마에 맞춰 조정 필요.
+    ※ L0_Raw_prompt_master에 div/ctg/stt/bns 컬럼이 없으면 prompt_id에서 SUBSTR로 파싱해야 함.
+    아래 템플릿은 L0_Raw_prompt_master에 컬럼이 있다고 가정 — PIC가 실 스키마에 맞춰 조정 필요.
     """
     fq_v = f"`{dataset}.{visibility_table}`"
     fq_pm = f"`{dataset}.{prompt_master_table}`"
-    return f"""-- report_visibility 생성 (시트 §4.3 변환 규칙)
+    return f"""-- L1_report_visibility 생성 (시트 §4.3 변환 규칙)
 -- Group By: start_date, end_date, cntr, ctg, bns, brand
 -- visibility = AVG(visibility) %
--- ⚠️ prompt_master.div/ctg/stt/bns가 실재 컬럼인지 확인 필요.
+-- ⚠️ L0_Raw_prompt_master.div/ctg/stt/bns가 실재 컬럼인지 확인 필요.
 --    없으면 prompt_id에서 SUBSTR(prompt_id, 4, 2) 등으로 파싱.
 
 WITH joined AS (

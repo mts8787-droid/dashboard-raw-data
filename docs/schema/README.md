@@ -1,6 +1,6 @@
 # 데이터 스키마 디렉터리
 
-`pj-my-geo.semrush_data` 데이터셋의 7개 테이블 — 컬럼 정의 + 데이터 리니지(흐름).
+`pj-my-geo.semrush_data` 데이터셋의 8개 테이블 — 컬럼 정의 + 데이터 리니지(흐름).
 
 **원천 명세서**:
 - [Ascent DB 데이터 스키마 시트](https://docs.google.com/spreadsheets/d/1zgs-BV4gyhR0uGSCX3Mww8loacpDcWcYV-BVMhbUOno) — 변환 흐름·Prompt ID 규칙
@@ -17,17 +17,18 @@ docs/schema/
 테이블별 1개 JSON에 컬럼 정의 + 리니지(상류·하류·변환 규칙)를 모두 담는다.
 시간 역순 변경 이력은 별도로 관리하지 않음 (필요 시 git log로 추적).
 
-## 7개 테이블 현황
+## 8개 테이블 현황
 
-| 분류 | 테이블 | 컬럼 | 역할·주기 |
+| 레이어 | 테이블 | 컬럼 | 역할·주기 |
 |---|---|:---:|---|
-| 분류체계 | `prompt_master` | 14 | raw / weekly |
-| 원천 | `visibility` | 12 | raw / weekly |
-|  | `citation` | 13 | raw / monthly |
-| 리포트 | `report_visibility` | 9 | transform / weekly (visibility ⨝ prompt_master) |
-|  | `report_citation` | 24 | transform / monthly (citation ⨝ prompt_master ⨝ domain_mapping) |
-| 매핑 | `competitor_brand` | 4 | mapping / static |
-|  | `domain_mapping` | 3 | mapping / static |
+| **L0 (Raw)** | `L0_Raw_visibility` | 12 | SEMrush API 원천 적재 / weekly |
+|  | `L0_Raw_prompt_master` | 14 | 분류체계 마스터 / weekly |
+| **L1 (Transform)** | `L1_visibility` | 12 | L0_Raw_visibility ⨝ L0_Raw_prompt_master / weekly |
+|  | `L1_citation` | 13 | L0_Raw_visibility ⨝ L0_Raw_prompt_master / monthly |
+|  | `L1_report_visibility` | 9 | L1_visibility ⨝ L0_Raw_prompt_master → GROUP BY AVG / weekly |
+|  | `L1_report_citation` | 24 | L1_citation ⨝ L0_Raw_prompt_master ⨝ L1_domain_mapping / monthly |
+|  | `L1_competitor_brand` | 4 | 경쟁사 브랜드 매핑 / static |
+|  | `L1_domain_mapping` | 3 | 도메인 유형 매핑 / static |
 
 ## JSON 구조
 

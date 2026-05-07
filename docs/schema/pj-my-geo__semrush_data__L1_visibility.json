@@ -1,0 +1,36 @@
+{
+  "dataset": "pj-my-geo.semrush_data",
+  "table": "L1_visibility",
+  "saved_at": "2026-05-08T00:00:00.000000+00:00",
+  "saved_by": "code-review",
+  "note": "L1 transform — L0_Raw_visibility + L0_Raw_prompt_master 조인 결과 — 12컬럼",
+  "row_count_at_save": 0,
+  "columns": [
+    {"name": "id", "bq_type": "INT64", "dtype": "int64", "nullable": "N", "key": "PK", "description": "테이블 내부 고유 식별자", "category": "ID/Key"},
+    {"name": "prompt_id", "bq_type": "STRING", "dtype": "object", "nullable": "Y", "key": "FK", "description": "L0_Raw_prompt_master FK", "category": "ID/Key"},
+    {"name": "start_date", "bq_type": "DATE", "dtype": "date", "nullable": "N", "key": "", "description": "데이터 수집 시작일", "category": "차원(Dimension)"},
+    {"name": "end_date", "bq_type": "DATE", "dtype": "date", "nullable": "N", "key": "", "description": "데이터 수집 종료일", "category": "차원(Dimension)"},
+    {"name": "cntr", "bq_type": "STRING", "dtype": "object", "nullable": "Y", "key": "", "description": "국가 코드", "category": "차원(Dimension)"},
+    {"name": "brand", "bq_type": "STRING", "dtype": "object", "nullable": "Y", "key": "", "description": "브랜드명 (LG·Samsung 등)", "category": "차원(Dimension)"},
+    {"name": "model", "bq_type": "STRING", "dtype": "object", "nullable": "Y", "key": "", "description": "LLM 모델명", "category": "차원(Dimension)"},
+    {"name": "position", "bq_type": "STRING", "dtype": "object", "nullable": "Y", "key": "", "description": "LLM 응답 내 노출 위치 (-1=미노출)", "category": "측정값(Metric)"},
+    {"name": "mentions", "bq_type": "INT64", "dtype": "int64", "nullable": "Y", "key": "", "description": "언급 수", "category": "측정값(Metric)"},
+    {"name": "visibility", "bq_type": "STRING", "dtype": "object", "nullable": "Y", "key": "", "description": "가시성 값 (원천 STRING — report에서 평균%로 가공)", "category": "측정값(Metric)"},
+    {"name": "input_at", "bq_type": "TIMESTAMP", "dtype": "datetime64[ns]", "nullable": "Y", "key": "", "description": "적재 시각", "category": "메타(System)"},
+    {"name": "updated_at", "bq_type": "TIMESTAMP", "dtype": "datetime64[ns]", "nullable": "Y", "key": "", "description": "수정 시각", "category": "메타(System)"}
+  ],
+  "lineage": {
+    "role": "transform",
+    "frequency": "weekly",
+    "sources": [
+      {"table": "L0_Raw_visibility", "join_on": "prompts"},
+      {"table": "L0_Raw_prompt_master", "join_on": "prompt_id"}
+    ],
+    "downstream": ["L1_report_visibility"],
+    "transforms": [
+      "L0_Raw_visibility ⨝ L0_Raw_prompt_master ON prompts 매핑",
+      "date → start_date/end_date 변환",
+      "brand·cntr 코드에서 추가"
+    ]
+  }
+}

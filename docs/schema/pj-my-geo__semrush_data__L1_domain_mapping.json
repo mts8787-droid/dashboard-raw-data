@@ -1,0 +1,20 @@
+{
+  "dataset": "pj-my-geo.semrush_data",
+  "table": "L1_domain_mapping",
+  "saved_at": "2026-05-08T00:00:00.000000+00:00",
+  "saved_by": "code-review",
+  "note": "L1 도메인 유형 매핑 — 3컬럼",
+  "row_count_at_save": 0,
+  "columns": [
+    {"name": "id", "bq_type": "INT64", "dtype": "int64", "nullable": "N", "key": "PK", "description": "테이블 내부 고유 식별자", "category": "ID/Key"},
+    {"name": "domain", "bq_type": "STRING", "dtype": "object", "nullable": "Y", "key": "", "description": "도메인 주소 (lg.com 등)", "category": "차원(Dimension)"},
+    {"name": "type", "bq_type": "STRING", "dtype": "object", "nullable": "Y", "key": "", "description": "도메인 유형 (Owned/Earned/Paid/Competitor 등)", "category": "차원(Dimension)"}
+  ],
+  "lineage": {
+    "role": "transform",
+    "frequency": "static",
+    "sources": [{"system": "PIC 수동 입력 (도메인 유형 분류)", "frequency": "static"}],
+    "downstream": ["L1_report_citation"],
+    "transforms": []
+  }
+}

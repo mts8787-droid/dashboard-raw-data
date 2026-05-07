@@ -15,6 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY config.py semrush_client.py bigquery_loader.py main.py ./
 COPY app.py start.sh chart_utils.py ./
 COPY pages ./pages
+RUN chmod +x start.sh
 
 # 런타임 보안: 비-root 사용자로 실행
 RUN useradd --create-home --shell /bin/bash app

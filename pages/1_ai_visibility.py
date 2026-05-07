@@ -89,7 +89,7 @@ with col_save:
                 loader = get_loader()
                 df = st.session_state["collected_df"]
                 with st.spinner("저장 중..."):
-                    result = loader.load_dataframe(df, "ai_visibility")
+                    result = loader.load_dataframe(df, "L0_Raw_visibility")
                 st.success(f"저장 완료! {result['rows']:,}행 (총 {result.get('total_rows', '?'):,}행)")
             except Exception as e:
                 st.error(f"저장 실패: {e}")
@@ -130,7 +130,7 @@ if "collected_df" in st.session_state:
 
     with tab_csv:
         csv = df.to_csv(index=False).encode("utf-8")
-        st.download_button("📥 CSV 다운로드", csv, "ai_visibility.csv", "text/csv")
+        st.download_button("📥 CSV 다운로드", csv, "L0_Raw_visibility.csv", "text/csv")
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # 2. BigQuery 저장 데이터 조회
@@ -151,7 +151,7 @@ if st.button("🔍 조회", type="primary"):
         if q_model != "전체":
             where = f"WHERE model = '{q_model}'"
         sql = f"""
-            SELECT * FROM `{DATASET}.ai_visibility`
+            SELECT * FROM `{DATASET}.L0_Raw_visibility`
             {where}
             ORDER BY date DESC, model, tag
             LIMIT {q_limit}
@@ -167,4 +167,4 @@ if "bq_result" in st.session_state:
     bq_df = st.session_state["bq_result"]
     st.dataframe(bq_df, use_container_width=True, hide_index=True)
     csv = bq_df.to_csv(index=False).encode("utf-8")
-    st.download_button("📥 BigQuery 결과 CSV", csv, "bq_ai_visibility.csv", "text/csv")
+    st.download_button("📥 BigQuery 결과 CSV", csv, "bq_L0_Raw_visibility.csv", "text/csv")

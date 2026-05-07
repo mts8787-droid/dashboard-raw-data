@@ -52,7 +52,7 @@ st.markdown("## SQL 쿼리")
 
 dataset = f"{GCP_PROJECT_ID}.{BQ_DATASET}" if GCP_PROJECT_ID else "project.dataset"
 
-default_query = f"SELECT * FROM `{dataset}.ai_visibility` ORDER BY date DESC, model LIMIT 100"
+default_query = f"SELECT * FROM `{dataset}.L0_Raw_visibility` ORDER BY date DESC, model LIMIT 100"
 query = st.text_area("SQL 쿼리", value=default_query, height=120)
 
 if st.button("▶️ 쿼리 실행", type="primary"):
@@ -76,7 +76,7 @@ st.markdown("---")
 st.markdown("## 빠른 테이블 조회")
 
 table_options = [
-    "ai_visibility",
+    "L0_Raw_visibility",
 ]
 selected_table = st.selectbox("테이블 선택", table_options)
 row_limit = st.slider("조회 행 수", 10, 1000, 100)

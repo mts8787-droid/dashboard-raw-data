@@ -17,6 +17,7 @@ if _gcp_creds_json and not os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
     except json.JSONDecodeError:
         # 이스케이프된 줄바꿈 복원 시도
         _gcp_creds_json = _gcp_creds_json.replace("\\n", "\n")
+        json.loads(_gcp_creds_json)  # 여전히 유효하지 않으면 여기서 예외 발생
     _tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
     _tmp.write(_gcp_creds_json)
     _tmp.close()

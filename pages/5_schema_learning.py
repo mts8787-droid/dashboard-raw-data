@@ -36,7 +36,7 @@ table_name = None
 if mode.startswith("테이블"):
     col1, col2 = st.columns([2, 1])
     with col1:
-        table_name = st.text_input("테이블 이름", value="ai_visibility")
+        table_name = st.text_input("테이블 이름", value="L0_Raw_visibility")
     with col2:
         sample_size = st.number_input("샘플 행 수 (분석 정확도 ↔ 비용)", 100, 10000, 1000, step=100)
     if st.button("📥 가져와서 분석", type="primary"):
@@ -50,8 +50,8 @@ if mode.startswith("테이블"):
         except Exception as e:
             st.error(f"조회 실패: {e}")
 else:
-    sql = st.text_area("SQL", value=f"SELECT * FROM `{dataset_full}.ai_visibility` LIMIT 1000", height=100)
-    table_label = st.text_input("이 결과를 어떤 테이블 이름으로 저장할까요?", value="ai_visibility")
+    sql = st.text_area("SQL", value=f"SELECT * FROM `{dataset_full}.L0_Raw_visibility` LIMIT 1000", height=100)
+    table_label = st.text_input("이 결과를 어떤 테이블 이름으로 저장할까요?", value="L0_Raw_visibility")
     if st.button("▶️ 실행하고 분석", type="primary"):
         try:
             with st.spinner("쿼리 실행 중..."):
@@ -192,14 +192,14 @@ sources_raw = st.text_area(
         for s in (prev_lin.get("sources") or [])
     ]),
     height=80,
-    placeholder='{"system": "SEMrush API", "frequency": "weekly"}\n{"table": "prompt_master", "join_on": "prompt_id"}',
+    placeholder='{"system": "SEMrush API", "frequency": "weekly"}\n{"table": "L0_Raw_prompt_master", "join_on": "prompt_id"}',
 )
 
 st.markdown("#### 하류 (Downstream)")
 downstream_raw = st.text_input(
     "쉼표로 구분된 하류 테이블 이름",
     value=", ".join(prev_lin.get("downstream") or []),
-    placeholder="report_visibility, report_citation",
+    placeholder="L1_report_visibility, L1_report_citation",
 )
 
 st.markdown("#### 변환 규칙 (transforms)")

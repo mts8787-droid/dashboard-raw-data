@@ -79,17 +79,17 @@ st.code(desc_sql, language="sql")
 
 # ─── 변환 쿼리 (해당 테이블에 한정) ──────────────────────────────
 st.markdown("### 4) 변환 쿼리 템플릿")
-if tb == "report_visibility":
-    st.markdown("**시트 §4.3 — `report_visibility = visibility ⨝ prompt_master`**")
-    rv = schema_to_ddl.build_report_visibility_query(dataset=ds)
+if tb == "L1_report_visibility":
+    st.markdown("**시트 §4.3 — `L1_report_visibility = L1_visibility ⨝ L0_Raw_prompt_master`**")
+    rv = schema_to_ddl.build_L1_report_visibility_query(dataset=ds)
     st.code(rv, language="sql")
-    st.download_button("⬇ 변환 쿼리 다운로드", rv, "report_visibility_query.sql", "text/plain")
+    st.download_button("⬇ 변환 쿼리 다운로드", rv, "L1_report_visibility_query.sql", "text/plain")
     st.markdown("---")
     st.markdown("**prompt_id 14자리 분해 SQL (참고)**")
     st.code(schema_to_ddl.parse_prompt_id_sql(), language="sql")
-elif tb in ("report_citation",):
+elif tb in ("L1_report_citation",):
     st.info(
-        "report_citation 변환 쿼리는 `domain_mapping` 컬럼 정의가 확정된 후 추가 예정. "
+        "L1_report_citation 변환 쿼리는 `L1_domain_mapping` 컬럼 정의가 확정된 후 추가 예정. "
         "시트엔 'Source 정제 + Domain 추출 + Scnd_depth 생성' 규칙만 명시되어 있어 컬럼명 확인 필요."
     )
 else:

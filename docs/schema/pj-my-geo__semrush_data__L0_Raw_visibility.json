@@ -1,0 +1,29 @@
+{
+  "dataset": "pj-my-geo.semrush_data",
+  "table": "L0_Raw_visibility",
+  "saved_at": "2026-05-08T00:00:00.000000+00:00",
+  "saved_by": "code-review",
+  "note": "SEMrush Enterprise API 원천 적재 테이블 (L0 raw) — 12컬럼",
+  "row_count_at_save": 21840,
+  "columns": [
+    {"name": "tag", "bq_type": "STRING", "dtype": "object", "nullable": "Y", "key": "", "description": "카테고리/제품 태그 (계층 구조: HS__REF__launched__Brand)", "category": "차원(Dimension)"},
+    {"name": "visibility", "bq_type": "FLOAT", "dtype": "float64", "nullable": "Y", "key": "", "description": "AI 검색 가시성 (0~1, 높을수록 좋음)", "category": "측정값(Metric)"},
+    {"name": "sov", "bq_type": "FLOAT", "dtype": "float64", "nullable": "Y", "key": "", "description": "Share of Voice — 점유율", "category": "측정값(Metric)"},
+    {"name": "avg_position", "bq_type": "FLOAT", "dtype": "float64", "nullable": "Y", "key": "", "description": "AI 응답 내 평균 순위 (낮을수록 좋음)", "category": "측정값(Metric)"},
+    {"name": "mentions", "bq_type": "INTEGER", "dtype": "int64", "nullable": "Y", "key": "", "description": "AI 응답에서 브랜드 언급 횟수", "category": "측정값(Metric)"},
+    {"name": "prompts", "bq_type": "INTEGER", "dtype": "int64", "nullable": "Y", "key": "", "description": "전체 프롬프트(질문) 수 — L0_Raw_prompt_master.prompts와 매핑", "category": "측정값(Metric)"},
+    {"name": "prompts_mentioned", "bq_type": "FLOAT", "dtype": "float64", "nullable": "Y", "key": "", "description": "브랜드가 언급된 프롬프트 수", "category": "측정값(Metric)"},
+    {"name": "unique_prompts", "bq_type": "INTEGER", "dtype": "int64", "nullable": "Y", "key": "", "description": "고유 프롬프트 수", "category": "측정값(Metric)"},
+    {"name": "model", "bq_type": "STRING", "dtype": "object", "nullable": "Y", "key": "", "description": "AI 모델 (search-gpt·perplexity·gpt-5·gemini-2.5-flash·copilot·claude·meta-ai)", "category": "차원(Dimension)"},
+    {"name": "date", "bq_type": "DATE", "dtype": "date", "nullable": "Y", "key": "", "description": "데이터 수집일", "category": "차원(Dimension)"},
+    {"name": "_loaded_at", "bq_type": "STRING", "dtype": "object", "nullable": "Y", "key": "", "description": "적재 시점 (UTC ISO8601)", "category": "메타(System)"},
+    {"name": "_source", "bq_type": "STRING", "dtype": "object", "nullable": "Y", "key": "", "description": "원천, 항상 semrush_enterprise", "category": "메타(System)"}
+  ],
+  "lineage": {
+    "role": "raw",
+    "frequency": "weekly",
+    "sources": [{"system": "SEMrush Enterprise Element API", "frequency": "weekly"}],
+    "downstream": ["L1_visibility", "L1_citation"],
+    "transforms": []
+  }
+}

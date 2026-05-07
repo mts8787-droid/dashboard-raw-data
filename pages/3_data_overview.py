@@ -20,7 +20,7 @@ DATASET = f"{GCP_PROJECT_ID}.{BQ_DATASET}"
 @st.cache_data(ttl=300)
 def load_overview():
     loader = get_loader()
-    total = loader.query(f"SELECT COUNT(*) as cnt FROM `{DATASET}.ai_visibility`")
+    total = loader.query(f"SELECT COUNT(*) as cnt FROM `{DATASET}.L0_Raw_visibility`")
     return int(total["cnt"].iloc[0])
 
 @st.cache_data(ttl=300)
@@ -29,7 +29,7 @@ def load_schema():
     return loader.query(f"""
         SELECT column_name, data_type, is_nullable
         FROM `{GCP_PROJECT_ID}.semrush_data.INFORMATION_SCHEMA.COLUMNS`
-        WHERE table_name = 'ai_visibility'
+        WHERE table_name = 'L0_Raw_visibility'
         ORDER BY ordinal_position
     """)
 
@@ -48,7 +48,7 @@ def load_daily_stats():
             SUM(prompts) as total_prompts,
             SUM(prompts_mentioned) as total_prompts_mentioned,
             COUNT(DISTINCT tag) as unique_tags
-        FROM `{DATASET}.ai_visibility`
+        FROM `{DATASET}.L0_Raw_visibility`
         GROUP BY model, date
         ORDER BY model, date
     """)
@@ -67,7 +67,7 @@ def load_model_summary():
             ROUND(SUM(mentions) * 1.0 / COUNT(DISTINCT date), 0) as avg_daily_mentions,
             MIN(date) as first_date,
             MAX(date) as last_date
-        FROM `{DATASET}.ai_visibility`
+        FROM `{DATASET}.L0_Raw_visibility`
         GROUP BY model
         ORDER BY avg_visibility DESC
     """)
@@ -92,7 +92,7 @@ def load_column_stats():
             COUNT(DISTINCT model) as model_count,
             COUNT(DISTINCT date) as date_count,
             COUNT(DISTINCT tag) as tag_count
-        FROM `{DATASET}.ai_visibility`
+        FROM `{DATASET}.L0_Raw_visibility`
     """)
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -135,7 +135,7 @@ st.markdown("## 테이블 스키마")
 col_left, col_right = st.columns([1, 1])
 
 with col_left:
-    st.markdown("### `ai_visibility` 컬럼 정의")
+    st.markdown("### `L0_Raw_visibility` 컬럼 정의")
     try:
         schema_df = load_schema()
         st.dataframe(schema_df, use_container_width=True, hide_index=True)
@@ -249,7 +249,7 @@ try:
             CAST(ROUND(AVG(mentions), 0) AS INT64) as avg_mentions,
             COUNT(DISTINCT model) as models,
             COUNT(DISTINCT date) as days
-        FROM `{DATASET}.ai_visibility`
+        FROM `{DATASET}.L0_Raw_visibility`
         WHERE visibility > 0
         GROUP BY tag
         ORDER BY avg_visibility DESC
@@ -267,7 +267,7 @@ except Exception as e:
 # ── 6. Raw SQL ──
 st.markdown("---")
 with st.expander("커스텀 SQL 쿼리"):
-    default_q = f"SELECT * FROM `{DATASET}.ai_visibility` WHERE tag = 'HS__REF' ORDER BY model, date LIMIT 100"
+    default_q = f"SELECT * FROM `{DATASET}.L0_Raw_visibility` WHERE tag = 'HS__REF' ORDER BY model, date LIMIT 100"
     query = st.text_area("SQL", value=default_q, height=100)
     if st.button("실행", type="primary"):
         try:

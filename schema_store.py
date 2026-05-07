@@ -9,7 +9,7 @@ _DOC = """
 각 스키마 파일 구조:
 {
   "dataset": "pj-my-geo.semrush_data",
-  "table": "ai_visibility",
+  "table": "L0_Raw_visibility",
   "saved_at": "2026-05-06T10:00:00Z",
   "saved_by": "PIC",
   "note": "...",
@@ -25,9 +25,9 @@ _DOC = """
     "frequency": "daily" | "weekly" | "monthly" | "static",
     "sources": [
       {"system": "SEMrush API", "frequency": "weekly"} |
-      {"table": "visibility", "join_on": "prompt_id"}
+      {"table": "L1_visibility", "join_on": "prompt_id"}
     ],
-    "downstream": ["report_visibility", ...],
+    "downstream": ["L1_report_visibility", ...],
     "transforms": ["GROUP BY ...", "AVG(...) ..."]
   }
 }

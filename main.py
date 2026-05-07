@@ -20,6 +20,7 @@
 import argparse
 import sys
 from datetime import datetime, timedelta
+import pandas as pd
 from semrush_client import SEMrushClient
 from bigquery_loader import BigQueryLoader
 
@@ -84,11 +85,10 @@ def main() -> int:
         print("=" * 50, file=sys.stderr)
         return 1
 
-    import pandas as pd
     combined = pd.concat(all_frames, ignore_index=True)
     print(f"\n▶ BigQuery 저장 중... ({len(combined)}행)")
     try:
-        result = loader.load_dataframe(combined, "ai_visibility")
+        result = loader.load_dataframe(combined, "L0_Raw_visibility")
         print(f"  → {result['status']} ({result['rows']}행, 누적 {result.get('total_rows', '?')}행)")
     except Exception as e:
         print(f"\n적재 실패: {e}", file=sys.stderr)

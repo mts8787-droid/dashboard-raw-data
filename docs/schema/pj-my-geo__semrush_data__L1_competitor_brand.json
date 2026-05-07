@@ -1,0 +1,21 @@
+{
+  "dataset": "pj-my-geo.semrush_data",
+  "table": "L1_competitor_brand",
+  "saved_at": "2026-05-08T00:00:00.000000+00:00",
+  "saved_by": "code-review",
+  "note": "L1 경쟁사 브랜드 매핑 — 4컬럼",
+  "row_count_at_save": 0,
+  "columns": [
+    {"name": "id", "bq_type": "INT64", "dtype": "int64", "nullable": "N", "key": "PK", "description": "테이블 내부 고유 식별자", "category": "ID/Key"},
+    {"name": "div", "bq_type": "STRING", "dtype": "object", "nullable": "Y", "key": "", "description": "본부 분류", "category": "차원(Dimension)"},
+    {"name": "ctg", "bq_type": "STRING", "dtype": "object", "nullable": "Y", "key": "", "description": "제품 카테고리", "category": "차원(Dimension)"},
+    {"name": "c_brand", "bq_type": "STRING", "dtype": "object", "nullable": "Y", "key": "", "description": "경쟁사 브랜드명", "category": "차원(Dimension)"}
+  ],
+  "lineage": {
+    "role": "transform",
+    "frequency": "static",
+    "sources": [{"system": "PIC 수동 입력 (LG 및 경쟁사 분류)", "frequency": "static"}],
+    "downstream": ["L1_report_visibility", "L1_report_citation"],
+    "transforms": []
+  }
+}
