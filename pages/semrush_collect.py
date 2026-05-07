@@ -26,7 +26,10 @@ st.markdown("## 데이터 수집")
 
 client = get_client()
 
-col1, col2, col3 = st.columns(3)
+col0, col1, col2, col3 = st.columns(4)
+with col0:
+    project_codes = list(client.PROJECTS.keys())
+    selected_project = st.selectbox("프로젝트", project_codes)
 with col1:
     brand = st.text_input("브랜드", value="LG")
 with col2:
@@ -59,6 +62,7 @@ with col_fetch:
             status.text(f"{model} 수집 중... ({i+1}/{len(models)})")
             try:
                 df = client.fetch_ai_visibility(
+                    project=selected_project,
                     model=model,
                     brand=brand,
                     date_range=(start_date.strftime("%Y-%m-%d"),
@@ -87,9 +91,11 @@ with col_save:
             try:
                 loader = get_loader()
                 df = st.session_state["collected_df"]
-                with st.spinner("저장 중..."):
-                    result = loader.load_dataframe(df, "L0_Raw_visibility")
-                st.success(f"저장 완료! {result['rows']:,}행 (총 {result.get('total_rows', '?'):,}행)")
+                table_name = f"L0_Raw_visibility_{selected_project}"
+                with st.spinner(f"저장 중... ({table_name})"):
+                    result = loader.load_dataframe(df, table_name)
+                    loader.refresh_l0_view()
+                st.success(f"저장 완료! {result['rows']:,}행 → {table_name} (VIEW 갱신됨)")
             except Exception as e:
                 st.error(f"저장 실패: {e}")
 

@@ -57,25 +57,31 @@ class SEMrushClient:
     # 지원하는 AI 모델 목록
     AI_MODELS = ["search-gpt", "perplexity", "gpt-5", "gemini-2.5-flash", "copilot", "claude", "meta-ai"]
 
-    ELEMENTS: dict[str, dict] = {
-        "L0_Raw_visibility": {
+    # 프로젝트별 API 쿼리 레지스트리
+    # key: 프로젝트 코드 (BigQuery 테이블 접미사로 사용)
+    # 새 프로젝트 추가 시 여기에 등록 → main.py --project <코드> 로 수집
+    PROJECTS: dict[str, dict] = {
+        "AU_D2C": {
             "product": "ai",
             "element_id": "44d76a1d-0611-4439-abcd-6c3db460da3b",
-            "description": "AI Visibility — 브랜드별 AI 검색 가시성",
+            "description": "AI Visibility — AU D2C",
             "default_filters": {
-                "simple": {
-                    "CBF_brand": "LG",
-                },
+                "simple": {"CBF_brand": "LG"},
             },
         },
-        # 새 요소를 추가하려면 여기에 등록하세요:
-        # "seo_rankings": {
-        #     "product": "seo",
+        # 새 프로젝트 추가 예시:
+        # "US_D2C": {
+        #     "product": "ai",
         #     "element_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-        #     "description": "SEO 키워드 순위",
-        #     "default_filters": {...},
+        #     "description": "AI Visibility — US D2C",
+        #     "default_filters": {"simple": {"CBF_brand": "LG"}},
         # },
     }
+
+    # ELEMENTS는 PROJECTS의 첫 번째 항목을 기본으로 사용 (하위호환)
+    @property
+    def ELEMENTS(self) -> dict:
+        return {f"L0_Raw_visibility_{k}": v for k, v in self.PROJECTS.items()}
 
     # ── API 호출 ─────────────────────────────────────────────────
 
@@ -203,10 +209,13 @@ class SEMrushClient:
         return self._request(product, element_id, filters,
                              project_id, target_id)
 
-    def _fetch_ai_visibility_single(self, model: str = None,
+    def _fetch_ai_visibility_single(self, project: str = None,
+                                     model: str = None,
                                      brand: str = "LG",
                                      date: str = None) -> pd.DataFrame:
         """단일 날짜, 단일 모델 AI Visibility 조회 (내부용)."""
+        proj = project or list(self.PROJECTS.keys())[0]
+        element_key = f"L0_Raw_visibility_{proj}"
         filters = {
             "simple": {"CBF_brand": brand},
             "advanced": {"op": "and", "filters": []},
@@ -223,7 +232,7 @@ class SEMrushClient:
         # advanced 필터가 비어있으면 제거
         if not filters["advanced"]["filters"]:
             del filters["advanced"]
-        df = self.fetch_element("L0_Raw_visibility", filters=filters)
+        df = self.fetch_element(element_key, filters=filters)
         if not df.empty:
             if model:
                 df["model"] = model
@@ -232,14 +241,15 @@ class SEMrushClient:
                 df["date"] = _dt.strptime(date, "%Y-%m-%d").date()
         return df
 
-    def fetch_ai_visibility(self, model: str = None,
+    def fetch_ai_visibility(self, project: str = None,
+                            model: str = None,
                             brand: str = "LG",
                             date_range: tuple = None) -> pd.DataFrame:
         """AI Visibility 데이터를 일별로 조회.
 
         Args:
+            project: 프로젝트 코드 (예: AU_D2C). None이면 첫 번째 프로젝트 사용
             model: AI 모델 (search-gpt, perplexity, gpt-5 등)
-                   None이면 모델 필터 없이 전체 조회
             brand: 브랜드 필터 (기본: LG)
             date_range: (start_date, end_date) 튜플
 
@@ -247,7 +257,8 @@ class SEMrushClient:
             pd.DataFrame — date, model 컬럼 자동 추가
         """
         if not date_range:
-            return self._fetch_ai_visibility_single(model=model, brand=brand)
+            return self._fetch_ai_visibility_single(
+                project=project, model=model, brand=brand)
 
         from datetime import datetime, timedelta
         import time
@@ -261,7 +272,7 @@ class SEMrushClient:
             date_str = current.strftime("%Y-%m-%d")
             try:
                 df = self._fetch_ai_visibility_single(
-                    model=model, brand=brand, date=date_str)
+                    project=project, model=model, brand=brand, date=date_str)
                 if not df.empty:
                     all_frames.append(df)
             except Exception as e:

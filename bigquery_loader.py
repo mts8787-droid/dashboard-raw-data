@@ -11,28 +11,41 @@ logger = logging.getLogger(__name__)
 
 
 class BigQueryLoader:
-    # Enterprise Element API 테이블 정의
-    TABLES = {
-        "L0_Raw_visibility": "AI Visibility — 모델별 일별 브랜드 가시성",
-    }
+    # L0_Raw_visibility 프로젝트 테이블 공통 스키마
+    L0_VISIBILITY_SCHEMA = [
+        bigquery.SchemaField("tag", "STRING"),
+        bigquery.SchemaField("visibility", "FLOAT"),
+        bigquery.SchemaField("sov", "FLOAT"),
+        bigquery.SchemaField("avg_position", "FLOAT"),
+        bigquery.SchemaField("mentions", "INTEGER"),
+        bigquery.SchemaField("prompts", "INTEGER"),
+        bigquery.SchemaField("prompts_mentioned", "FLOAT"),
+        bigquery.SchemaField("unique_prompts", "INTEGER"),
+        bigquery.SchemaField("model", "STRING"),
+        bigquery.SchemaField("date", "DATE"),
+        bigquery.SchemaField("_loaded_at", "STRING"),
+        bigquery.SchemaField("_source", "STRING"),
+    ]
 
-    # 명시적 스키마 정의 (autodetect 대체)
-    SCHEMAS = {
-        "L0_Raw_visibility": [
-            bigquery.SchemaField("tag", "STRING"),
-            bigquery.SchemaField("visibility", "FLOAT"),
-            bigquery.SchemaField("sov", "FLOAT"),
-            bigquery.SchemaField("avg_position", "FLOAT"),
-            bigquery.SchemaField("mentions", "INTEGER"),
-            bigquery.SchemaField("prompts", "INTEGER"),
-            bigquery.SchemaField("prompts_mentioned", "FLOAT"),
-            bigquery.SchemaField("unique_prompts", "INTEGER"),
-            bigquery.SchemaField("model", "STRING"),
-            bigquery.SchemaField("date", "DATE"),
-            bigquery.SchemaField("_loaded_at", "STRING"),
-            bigquery.SchemaField("_source", "STRING"),
-        ],
-    }
+    # VIEW 이름
+    L0_VIEW_NAME = "L0_Raw_visibility"
+
+    # 프로젝트 테이블 접두사
+    L0_TABLE_PREFIX = "L0_Raw_visibility_"
+
+    # SCHEMAS: 프로젝트 테이블에 동일 스키마 적용
+    @property
+    def SCHEMAS(self) -> dict:
+        """등록된 프로젝트 테이블 + 기타 테이블의 스키마."""
+        schemas = {}
+        dataset_ref = f"{self.project_id}.{self.dataset_id}"
+        try:
+            for t in self.client.list_tables(dataset_ref):
+                if t.table_id.startswith(self.L0_TABLE_PREFIX):
+                    schemas[t.table_id] = self.L0_VISIBILITY_SCHEMA
+        except Exception:
+            pass
+        return schemas
 
     def __init__(self, project_id=None, dataset_id=None):
         self.project_id = project_id or GCP_PROJECT_ID
@@ -124,7 +137,7 @@ class BigQueryLoader:
                 table = self.client.get_table(table_item.reference)
                 tables.append({
                     "table_name": table.table_id,
-                    "description": self.TABLES.get(table.table_id, ""),
+                    "description": "",
                     "num_rows": table.num_rows,
                     "size_mb": round(table.num_bytes / (1024 * 1024), 2) if table.num_bytes else 0,
                     "last_modified": table.modified.isoformat() if table.modified else None,
@@ -132,6 +145,38 @@ class BigQueryLoader:
         except Exception as e:
             logger.warning("테이블 목록 조회 실패: %s", e)
         return tables
+
+    def refresh_l0_view(self) -> str:
+        """프로젝트 테이블을 UNION ALL로 합산하는 L0_Raw_visibility VIEW 갱신.
+
+        Returns:
+            생성된 VIEW SQL
+        """
+        dataset_ref = f"{self.project_id}.{self.dataset_id}"
+        project_tables = []
+        for t in self.client.list_tables(dataset_ref):
+            if t.table_id.startswith(self.L0_TABLE_PREFIX):
+                project_tables.append(t.table_id)
+
+        if not project_tables:
+            logger.warning("프로젝트 테이블이 없습니다 (%s_*)", self.L0_TABLE_PREFIX)
+            return ""
+
+        selects = []
+        for tbl in sorted(project_tables):
+            proj_code = tbl[len(self.L0_TABLE_PREFIX):]
+            fq = f"`{dataset_ref}.{tbl}`"
+            selects.append(
+                f"SELECT *, '{proj_code}' AS project FROM {fq}"
+            )
+
+        union_sql = "\nUNION ALL\n".join(selects)
+        view_fq = f"`{dataset_ref}.{self.L0_VIEW_NAME}`"
+        ddl = f"CREATE OR REPLACE VIEW {view_fq} AS\n{union_sql}"
+
+        self.client.query(ddl).result()
+        logger.info("VIEW %s 갱신 완료 (프로젝트: %s)", self.L0_VIEW_NAME, project_tables)
+        return ddl
 
     # 대시보드에서 허용하지 않는 SQL 키워드 (읽기 전용 보호)
     _BLOCKED_SQL = {"DROP", "DELETE", "TRUNCATE", "INSERT", "UPDATE", "MERGE",
