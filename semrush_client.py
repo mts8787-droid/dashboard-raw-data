@@ -60,7 +60,7 @@ class SEMrushClient:
     ELEMENTS: dict[str, dict] = {
         "L0_Raw_visibility": {
             "product": "ai",
-            "element_id": "66faab96-0c22-496d-aea1-54c119ac6c5d",
+            "element_id": "44d76a1d-0611-4439-abcd-6c3db460da3b",
             "description": "AI Visibility — 브랜드별 AI 검색 가시성",
             "default_filters": {
                 "simple": {
@@ -156,15 +156,18 @@ class SEMrushClient:
                 filters = {"simple": dict(filters.get("simple", {})),
                            "advanced": filters.get("advanced")}
 
-        # 날짜 오버라이드
+        # 날짜 오버라이드 (advanced 필터 방식)
         if date_range and filters:
-            if "simple" not in filters:
-                filters["simple"] = {}
-            filters["simple"]["start_date"] = date_range[0]
-            filters["simple"]["end_date"] = date_range[1]
+            if "advanced" not in filters:
+                filters["advanced"] = {"op": "and", "filters": []}
+            filters["advanced"]["filters"].extend([
+                {"op": "gte", "val": date_range[0], "col": "CBF_date__start"},
+                {"op": "lte", "val": date_range[1], "col": "CBF_date__end"},
+            ])
 
-        # advanced가 None이면 제거
-        if filters and filters.get("advanced") is None:
+        # advanced가 None이거나 필터가 비어있으면 제거
+        if filters and (filters.get("advanced") is None
+                        or not filters.get("advanced", {}).get("filters")):
             filters.pop("advanced", None)
 
         response = self._request(product, element_id, filters,
@@ -204,15 +207,23 @@ class SEMrushClient:
                                      brand: str = "LG",
                                      date: str = None) -> pd.DataFrame:
         """단일 날짜, 단일 모델 AI Visibility 조회 (내부용)."""
-        filters = {"simple": {"CBF_brand": brand}}
+        filters = {
+            "simple": {"CBF_brand": brand},
+            "advanced": {"op": "and", "filters": []},
+        }
         if model:
-            filters["advanced"] = {
-                "op": "and",
-                "filters": [{"op": "eq", "val": model, "col": "CBF_model"}],
-            }
-        date_range = (date, date) if date else None
-        df = self.fetch_element("L0_Raw_visibility", filters=filters,
-                                date_range=date_range)
+            filters["advanced"]["filters"].append(
+                {"op": "eq", "val": model, "col": "CBF_model"}
+            )
+        if date:
+            filters["advanced"]["filters"].extend([
+                {"op": "gte", "val": date, "col": "CBF_date__start"},
+                {"op": "lte", "val": date, "col": "CBF_date__end"},
+            ])
+        # advanced 필터가 비어있으면 제거
+        if not filters["advanced"]["filters"]:
+            del filters["advanced"]
+        df = self.fetch_element("L0_Raw_visibility", filters=filters)
         if not df.empty:
             if model:
                 df["model"] = model
