@@ -6,8 +6,7 @@ import tempfile
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title="Settings", page_icon="⚙️", layout="wide")
-st.title("⚙️ BigQuery 연결 설정")
+st.title("연결 설정")
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # 1단계: BigQuery 연결 가이드

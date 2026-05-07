@@ -1,12 +1,11 @@
-"""AI Visibility 데이터 수집 & 조회"""
+"""SEMrush 데이터 수집 & 조회"""
 
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 from config import GCP_PROJECT_ID, BQ_DATASET
 
-st.set_page_config(page_title="AI Visibility", page_icon="🤖", layout="wide")
-st.title("🤖 AI Visibility")
+st.title("SEMrush 데이터 수집")
 
 @st.cache_resource
 def get_client():

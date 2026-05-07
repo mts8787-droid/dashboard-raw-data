@@ -4,8 +4,7 @@ import streamlit as st
 import pandas as pd
 from config import GCP_PROJECT_ID, BQ_DATASET
 
-st.set_page_config(page_title="BigQuery 관리", page_icon="🗄️", layout="wide")
-st.title("🗄️ BigQuery 데이터 관리")
+st.title("SQL 쿼리")
 
 @st.cache_resource
 def get_loader():

@@ -12,9 +12,8 @@ import pandas as pd
 from config import GCP_PROJECT_ID, BQ_DATASET
 import schema_store
 
-st.set_page_config(page_title="스키마 학습", page_icon="🧠", layout="wide")
-st.title("🧠 스키마 학습 (Human-in-the-Loop)")
-st.caption("BigQuery 쿼리 결과를 분석하고 PIC 검수 후 데이터 스키마 문서로 저장")
+st.title("스키마 정의")
+st.caption("BigQuery 실데이터를 분석하고 PIC 검수 후 스키마 문서로 저장")
 
 @st.cache_resource
 def get_loader():

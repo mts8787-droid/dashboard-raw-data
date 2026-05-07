@@ -6,9 +6,8 @@
 import streamlit as st
 import schema_store
 
-st.set_page_config(page_title="데이터 리니지", page_icon="📜", layout="wide")
-st.title("📜 데이터 리니지")
-st.caption("테이블별 데이터 흐름 — 어디서 오고 어디로 가는지")
+st.title("데이터 리니지")
+st.caption("L0/L1 테이블별 데이터 흐름 — 상류·하류 의존성")
 
 
 tables = schema_store.all_tables()

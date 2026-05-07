@@ -8,8 +8,7 @@ import streamlit as st
 import schema_store
 import schema_to_ddl
 
-st.set_page_config(page_title="스키마 DDL", page_icon="🛠️", layout="wide")
-st.title("🛠️ 스키마 → DDL/쿼리 변환")
+st.title("DDL 생성")
 st.caption("저장된 스키마에서 CREATE TABLE / SELECT / 변환 쿼리 자동 생성")
 
 

@@ -4,8 +4,7 @@ import streamlit as st
 import pandas as pd
 from config import GCP_PROJECT_ID, BQ_DATASET
 
-st.set_page_config(page_title="Data Overview", page_icon="📋", layout="wide")
-st.title("📋 Data Overview")
+st.title("데이터 현황")
 
 @st.cache_resource
 def get_loader():
